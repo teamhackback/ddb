@@ -118,6 +118,7 @@ class PGStream
         write('\0');
     }
 
+    // https://www.postgresql.org/docs/9.5/static/datatype-datetime.html
     void write(const ref Date x)
     {
         write(cast(int)(x.dayOfGregorianCal - PGEpochDay));

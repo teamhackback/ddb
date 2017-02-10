@@ -3,7 +3,7 @@ module ddb.pgconnection;
 import std.bitmanip : bigEndianToNative;
 import std.conv : parse, text, to;
 import std.exception : enforce;
-import std.datetime : Date;
+import std.datetime : Clock, Date, DateTime, UTC;
 import std.string;
 
 import ddb.db : DBRow;
@@ -156,6 +156,9 @@ class PGConnection
 
                 /*final*/ switch (param.type)
                 {
+                    case PGType.BOOLEAN:
+                        checkParam!bool(1);
+                        break;
                     case PGType.INT2: checkParam!short(2); break;
                     case PGType.INT4: checkParam!int(4); break;
                     case PGType.INT8: checkParam!long(8); break;
@@ -171,6 +174,8 @@ class PGConnection
                         break;
                     case PGType.DATE:
                         paramsLen += 4; break;
+                    case PGType.TIMESTAMP:
+                        paramsLen += 16; break;
                     default: assert(0, "Not implemented");
                 }
             }
@@ -206,6 +211,10 @@ class PGConnection
 
                 switch (param.type)
                 {
+                    case PGType.BOOLEAN:
+                        stream.write(cast(bool) 1);
+                        stream.write(param.value.coerce!bool);
+                        break;
                     case PGType.INT2:
                         stream.write(cast(int)2);
                         stream.write(param.value.coerce!short);
@@ -242,6 +251,11 @@ class PGConnection
                     case PGType.DATE:
                         stream.write(cast(int) 4);
                         stream.write(Date.fromISOString(param.value.coerce!string));
+                        break;
+                   case PGType.TIMESTAMP:
+                        stream.write(cast(int) 8);
+                        auto t = cast(DateTime) Clock.currTime(UTC());
+                        stream.write(t);
                         break;
                     default:
                         assert(0, "Not implemented");
