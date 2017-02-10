@@ -21,7 +21,7 @@ Class representing connection to PostgreSQL server.
 */
 class PGConnection
 {
-    //private:
+    package(ddb):
         PGStream stream;
         string[string] serverParams;
         int serverProcessID;
