@@ -176,7 +176,8 @@ class PGConnection
                         paramsLen += 4; break;
                     case PGType.TIMESTAMP:
                         paramsLen += 16; break;
-                    default: assert(0, "Not implemented");
+                    default:
+                        assert(0, param.type.to!string ~ " Not implemented");
                 }
             }
 
@@ -258,7 +259,7 @@ class PGConnection
                         stream.write(t);
                         break;
                     default:
-                        assert(0, "Not implemented");
+                        assert(0, param.type.to!string ~ " Not implemented");
                 }
             }
 
