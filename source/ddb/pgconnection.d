@@ -162,6 +162,7 @@ class PGConnection
                     case PGType.INT2: checkParam!short(2); break;
                     case PGType.INT4: checkParam!int(4); break;
                     case PGType.INT8: checkParam!long(8); break;
+                    case PGType.VARCHAR:
                     case PGType.TEXT:
                         paramsLen += param.value.coerce!string.length;
                         hasText = true;
@@ -228,6 +229,7 @@ class PGConnection
                         stream.write(cast(int)8);
                         stream.write(param.value.coerce!long);
                         break;
+                    case PGType.VARCHAR:
                     case PGType.TEXT:
                         auto s = param.value.coerce!string;
                         stream.write(cast(int) s.length);
