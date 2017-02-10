@@ -121,32 +121,32 @@ class PGStream
     // https://www.postgresql.org/docs/9.5/static/datatype-datetime.html
     void write(const ref Date x)
     {
-        write(cast(int)(x.dayOfGregorianCal - PGEpochDay));
+        write(cast(long)(x.dayOfGregorianCal - PGEpochDay));
     }
 
     void write(Date x)
     {
-        write(cast(int)(x.dayOfGregorianCal - PGEpochDay));
+        write(cast(long)(x.dayOfGregorianCal - PGEpochDay));
     }
 
     void write(const ref TimeOfDay x)
     {
-        write(cast(int)((x - PGEpochTime).total!"usecs"));
+        write(cast(long)((x - PGEpochTime).total!"usecs"));
     }
 
     void write(const ref DateTime x) // timestamp
     {
-        write(cast(int)((x - PGEpochDateTime).total!"usecs"));
+        write(cast(long)((x - PGEpochDateTime).total!"usecs"));
     }
 
     void write(DateTime x) // timestamp
     {
-        write(cast(int)((x - PGEpochDateTime).total!"usecs"));
+        write(cast(long)((x - PGEpochDateTime).total!"usecs"));
     }
 
     void write(const ref SysTime x) // timestamptz
     {
-        write(cast(int)((x - SysTime(PGEpochDateTime, UTC())).total!"usecs"));
+        write(cast(long)((x - SysTime(PGEpochDateTime, UTC())).total!"usecs"));
     }
 
     // BUG: Does not support months
