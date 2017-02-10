@@ -1,0 +1,10 @@
+{
+    "name": "tests",
+    "description": "Postgres test",
+    "sourceFiles": ["source.d"],
+    "targetType": "executable",
+    "dependencies": {
+        "ddb": {"path": ".."},
+        "vibe-core": {"version": "1.0.0" }
+    }
+}
