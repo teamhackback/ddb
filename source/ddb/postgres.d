@@ -66,28 +66,28 @@ Examples:
 with vibe.d use -version=Have_vibe_d_core and use a ConnectionPool (PostgresDB Object & lockConnection)
 ---
 
-	auto pdb = new PostgresDB([
-		"host" : "192.168.2.50",
-		"database" : "postgres",
-		"user" : "postgres",
-		"password" : ""
-	]);
-	auto conn = pdb.lockConnection();
+    auto pdb = new PostgresDB([
+        "host" : "192.168.2.50",
+        "database" : "postgres",
+        "user" : "postgres",
+        "password" : ""
+    ]);
+    auto conn = pdb.lockConnection();
 
-	auto cmd = new PGCommand(conn, "SELECT typname, typlen FROM pg_type");
-	auto result = cmd.executeQuery;
+    auto cmd = new PGCommand(conn, "SELECT typname, typlen FROM pg_type");
+    auto result = cmd.executeQuery;
 
-	try
-	{
-		foreach (row; result)
-		{
-			writeln(row["typname"], ", ", row[1]);
-		}
-	}
-	finally
-	{
-		result.close;
-	}
+    try
+    {
+        foreach (row; result)
+        {
+            writeln(row["typname"], ", ", row[1]);
+        }
+    }
+    finally
+    {
+        result.close;
+    }
 
 ---
 without vibe.d you can use std sockets with PGConnection object
@@ -160,36 +160,36 @@ public import ddb.exceptions;
 
 version(Have_vibe_core)
 {
-	class PostgresDB {
-	    import vibe.core.connectionpool : ConnectionPool;
-	    import ddb.pgconnection : PGConnection;
+    class PostgresDB {
+        import vibe.core.connectionpool : ConnectionPool;
+        import ddb.pgconnection : PGConnection;
 
-		private {
-			string[string] m_params;
-			ConnectionPool!PGConnection m_pool;
-		}
+        private {
+            string[string] m_params;
+            ConnectionPool!PGConnection m_pool;
+        }
 
-		this(string[string] conn_params)
-		{
-			m_params = conn_params.dup;
-			m_pool = new ConnectionPool!PGConnection(&createConnection);
-		}
+        this(string[string] conn_params)
+        {
+            m_params = conn_params.dup;
+            m_pool = new ConnectionPool!PGConnection(&createConnection);
+        }
 
-		auto lockConnection() { return m_pool.lockConnection(); }
+        auto lockConnection() { return m_pool.lockConnection(); }
 
-		private PGConnection createConnection()
-		{
-			return new PGConnection(m_params);
-		}
-	}
+        private PGConnection createConnection()
+        {
+            return new PGConnection(m_params);
+        }
+    }
 }
 else
 {
-	class PostgresDB {
-		static assert(false,
-		              "The 'PostgresDB' connection pool requires Vibe.d and therefore "~
-		              "must be used with -version=Have_vibe_d_core"
-		              );
-	}
+    class PostgresDB {
+        static assert(false,
+                      "The 'PostgresDB' connection pool requires Vibe.d and therefore "~
+                      "must be used with -version=Have_vibe_d_core"
+                      );
+    }
 }
 

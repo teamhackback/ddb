@@ -70,35 +70,35 @@ class PGStream
         }
     }
 
-	void write(ubyte x)
-	{
-		write(nativeToBigEndian(x)); // ubyte[]
-	}
+    void write(ubyte x)
+    {
+        write(nativeToBigEndian(x)); // ubyte[]
+    }
 
     void write(short x)
-	{
-		write(nativeToBigEndian(x)); // ubyte[]
-	}
+    {
+        write(nativeToBigEndian(x)); // ubyte[]
+    }
 
     void write(int x)
-	{
-		write(nativeToBigEndian(x)); // ubyte[]
-	}
+    {
+        write(nativeToBigEndian(x)); // ubyte[]
+    }
 
     void write(long x)
     {
-		write(nativeToBigEndian(x));
-	}
+        write(nativeToBigEndian(x));
+    }
 
     void write(float x)
     {
-		write(nativeToBigEndian(x)); // ubyte[]
+        write(nativeToBigEndian(x)); // ubyte[]
     }
 
     void write(double x)
     {
-		write(nativeToBigEndian(x));
-	}
+        write(nativeToBigEndian(x));
+    }
 
     void writeString(string x)
     {
@@ -129,43 +129,43 @@ class PGStream
     }
 
     void write(const ref TimeOfDay x)
-	{
-		write(cast(int)((x - PGEpochTime).total!"usecs"));
+    {
+        write(cast(int)((x - PGEpochTime).total!"usecs"));
     }
 
     void write(const ref DateTime x) // timestamp
-	{
-		write(cast(int)((x - PGEpochDateTime).total!"usecs"));
+    {
+        write(cast(int)((x - PGEpochDateTime).total!"usecs"));
     }
 
     void write(DateTime x) // timestamp
-	{
-		write(cast(int)((x - PGEpochDateTime).total!"usecs"));
+    {
+        write(cast(int)((x - PGEpochDateTime).total!"usecs"));
     }
 
     void write(const ref SysTime x) // timestamptz
-	{
-		write(cast(int)((x - SysTime(PGEpochDateTime, UTC())).total!"usecs"));
+    {
+        write(cast(int)((x - SysTime(PGEpochDateTime, UTC())).total!"usecs"));
     }
 
     // BUG: Does not support months
     void write(const ref core.time.Duration x) // interval
-	{
-		int months = cast(int)(x.split!"weeks".weeks/28);
-		int days = cast(int)x.split!"days".days;
+    {
+        int months = cast(int)(x.split!"weeks".weeks/28);
+        int days = cast(int)x.split!"days".days;
         long usecs = x.total!"usecs" - convert!("days", "usecs")(days);
 
         write(usecs);
         write(days);
-		write(months);
-	}
+        write(months);
+    }
 
     void writeTimeTz(const ref SysTime x) // timetz
-	{
-		TimeOfDay t = cast(TimeOfDay)x;
+    {
+        TimeOfDay t = cast(TimeOfDay)x;
         write(t);
-		write(cast(int)0);
-	}
+        write(cast(int)0);
+    }
 }
 
 

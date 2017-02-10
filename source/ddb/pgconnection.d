@@ -47,14 +47,14 @@ class PGConnection
 
             char type;
             int len;
-			ubyte[1] ub;
-			stream.read(ub); // message type
+            ubyte[1] ub;
+            stream.read(ub); // message type
 
-			type = bigEndianToNative!char(ub);
-			ubyte[4] ubi;
-			stream.read(ubi); // message length, doesn't include type byte
+            type = bigEndianToNative!char(ub);
+            ubyte[4] ubi;
+            stream.read(ubi); // message length, doesn't include type byte
 
-			len = bigEndianToNative!int(ubi) - 4;
+            len = bigEndianToNative!int(ubi) - 4;
 
             ubyte[] msg;
             if (len > 0)
@@ -96,8 +96,8 @@ class PGConnection
                 stream.writeCString(key);
                 stream.writeCString(value);
             }
-		stream.write(cast(ubyte)0);
-	}
+        stream.write(cast(ubyte)0);
+    }
 
         void sendPasswordMessage(string password)
         {
@@ -123,16 +123,16 @@ class PGConnection
         }
 
         void sendCloseMessage(DescribeType type, string name)
-		{
-			stream.write('C');
+        {
+            stream.write('C');
             stream.write(cast(int)(4 + 1 + name.length + 1));
             stream.write(cast(char)type);
             stream.writeCString(name);
         }
 
         void sendTerminateMessage()
-		{
-			stream.write('X');
+        {
+            stream.write('X');
             stream.write(cast(int)4);
         }
 
@@ -141,7 +141,7 @@ class PGConnection
             int paramsLen = 0;
             bool hasText = false;
 
-			foreach (param; params)
+            foreach (param; params)
             {
                 enforce(param.value.hasValue, new ParamException("Parameter $" ~ to!string(param.index) ~ " value is not initialized"));
 
@@ -244,7 +244,7 @@ class PGConnection
                         stream.write(Date.fromISOString(param.value.coerce!string));
                         break;
                     default:
-						assert(0, "Not implemented");
+                        assert(0, "Not implemented");
                 }
             }
 
@@ -255,30 +255,30 @@ class PGConnection
         enum DescribeType : char { Statement = 'S', Portal = 'P' }
 
         void sendDescribeMessage(DescribeType type, string name)
-		{
-			stream.write('D');
+        {
+            stream.write('D');
             stream.write(cast(int)(4 + 1 + name.length + 1));
             stream.write(cast(char)type);
             stream.writeCString(name);
         }
 
         void sendExecuteMessage(string portalName, int maxRows)
-		{
-			stream.write('E');
+        {
+            stream.write('E');
             stream.write(cast(int)(4 + portalName.length + 1 + 4));
             stream.writeCString(portalName);
             stream.write(cast(int)maxRows);
         }
 
         void sendFlushMessage()
-		{
-			stream.write('H');
+        {
+            stream.write('H');
             stream.write(cast(int)4);
         }
 
         void sendSyncMessage()
-		{
-			stream.write('S');
+        {
+            stream.write('S');
             stream.write(cast(int)4);
         }
 
@@ -286,7 +286,7 @@ class PGConnection
         {
             enforce(msg.data.length >= 2);
 
-			char ftype;
+            char ftype;
             string fvalue;
             ResponseMessage response = new ResponseMessage;
 
@@ -311,11 +311,11 @@ class PGConnection
 
             sendFlushMessage();
 
-	receive:
+    receive:
 
             Message msg = getMessage();
 
-		switch (msg.type)
+        switch (msg.type)
             {
                 case 'E':
                     // ErrorResponse
@@ -672,7 +672,7 @@ class PGConnection
 
         receive:
 
-    		Message msg = getMessage();
+            Message msg = getMessage();
 
             switch (msg.type)
             {
@@ -681,7 +681,7 @@ class PGConnection
 
                     ResponseMessage response = handleResponseMessage(msg);
 
-				    if (msg.type == 'N')
+                    if (msg.type == 'N')
                         goto receive;
 
                     throw new ServerErrorException(response);

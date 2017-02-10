@@ -168,9 +168,9 @@ struct DBRow(Specs...)
 
     static if (isDynamicArray!T && !isSomeString!T)
     {
-		mixin template elmnt(U : U[]){
-			alias U ElemType;
-		}
+        mixin template elmnt(U : U[]){
+            alias U ElemType;
+        }
         mixin elmnt!T;
         enum hasStaticLength = false;
 

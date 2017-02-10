@@ -56,7 +56,7 @@ struct Message
 
         while (*p > 0)
             p++;
-		x = cast(string)data[position .. cast(size_t)(p - data.ptr)];
+        x = cast(string)data[position .. cast(size_t)(p - data.ptr)];
         position = cast(size_t)(p - data.ptr + 1);
     }
 
@@ -68,10 +68,10 @@ struct Message
     }
 
     void readString(out string x, int len)
-	{
-		x = cast(string)(data[position .. position + len]);
-		position += len;
-	}
+    {
+        x = cast(string)(data[position .. position + len]);
+        position += len;
+    }
 
     void read()(out bool x)
     {
@@ -192,10 +192,10 @@ struct Message
 
         return record.base;
     }
-	mixin template elmnt(U : U[])
-	{
-		alias U ElemType;
-	}
+    mixin template elmnt(U : U[])
+    {
+        alias U ElemType;
+    }
     private AT readDimension(AT)(int[] lengths, uint elementOid, int dim)
     {
 

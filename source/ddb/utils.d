@@ -31,15 +31,15 @@ template isConvertible(T, S)
 
 template arrayDimensions(T : T[])
 {
-	static if (isArray!T && !isSomeString!T)
-		enum arrayDimensions = arrayDimensions!T + 1;
-	else
-		enum arrayDimensions = 1;
+    static if (isArray!T && !isSomeString!T)
+        enum arrayDimensions = arrayDimensions!T + 1;
+    else
+        enum arrayDimensions = 1;
 }
 
 template arrayDimensions(T)
 {
-		enum arrayDimensions = 0;
+        enum arrayDimensions = 0;
 }
 
 template multiArrayElemType(T : T[])
@@ -52,7 +52,7 @@ template multiArrayElemType(T : T[])
 
 template multiArrayElemType(T)
 {
-	alias T multiArrayElemType;
+    alias T multiArrayElemType;
 }
 
 static assert(arrayDimensions!(int) == 0);
