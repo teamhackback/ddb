@@ -1,2 +1,3 @@
 .dub
 libddb.a
+ddb-test-library
