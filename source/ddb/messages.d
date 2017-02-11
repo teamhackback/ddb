@@ -132,6 +132,26 @@ struct Message
         x = dur!"days"(days) + dur!"usecs"(usecs);
     }
 
+    void read()(out Point p)
+    {
+        p = Point(read!double, read!double);
+    }
+
+    void read()(out LSeg lseg)
+    {
+        lseg = LSeg(read!double, read!double, read!double, read!double);
+    }
+
+    void read()(out Line line)
+    {
+        line = Line(read!double, read!double, read!double);
+    }
+
+    void read()(out Circle circle)
+    {
+        circle = Circle(read!double, read!double, read!double);
+    }
+
     SysTime readTimeTz() // timetz
     {
         TimeOfDay time = read!TimeOfDay;
@@ -143,7 +163,7 @@ struct Message
 
     T readComposite(T)()
     {
-        alias DBRow!T Record;
+        alias Record = DBRow!T;
 
         static if (Record.hasStaticLength)
         {
@@ -313,42 +333,56 @@ struct Message
             return new ConvException("Can't convert PostgreSQL's type " ~ (type ? *type : to!string(oid)) ~ " to " ~ T.stringof);
         }
 
+        // for a PGType generate label and its corresponding array label parsing
+        template genLabels(string pgtype, string dtype) {
+            enum genLabels = "
+               case " ~ pgtype ~ ":
+                   static if (isConvertible!(T, " ~ dtype ~"))
+                       return _to!T(read!(" ~ dtype ~ "));
+                   else
+                       throw convError!T();
+               case _" ~ pgtype ~ ":
+                   static if (isConvertible!(T, " ~ dtype ~ "[]))
+                       return _to!T(readArray!(" ~ dtype ~ "[]));
+                   else
+                       throw convError!T();
+            ";
+        }
+
+        import std.stdio;
+        writefln("readBaseType oid: %s", oid);
+
         with (PGType)
         switch (oid)
         {
-            case BOOLEAN:
-                static if (isConvertible!(T, bool))
-                    return _to!T(read!bool);
-                else
-                    throw convError!T();
-            case OID, REGPROC, 2202, 2203, 2204, 2205, 2206, 3734, 3769: // oid and reg*** aliases
+            // TODO: increases compilation time from 4s to 6s
+            mixin(genLabels!("BOOLEAN", "bool"));
+            mixin(genLabels!("INT2", "short"));
+            mixin(genLabels!("INT4", "int"));
+            mixin(genLabels!("INT8", "long"));
+            mixin(genLabels!("FLOAT4", "float"));
+            mixin(genLabels!("FLOAT8", "double"));
+            mixin(genLabels!("UUID", "std.uuid.UUID"));
+            mixin(genLabels!("CHAR", "char"));
+            mixin(genLabels!("DATE", "Date"));
+            mixin(genLabels!("TIME", "TimeOfDay"));
+            mixin(genLabels!("TIMESTAMP", "DateTime"));
+            mixin(genLabels!("TIMESTAMPTZ", "SysTime"));
+            mixin(genLabels!("INTERVAL", "core.time.Duration"));
+            mixin(genLabels!("TIMETZ", "SysTime"));
+            mixin(genLabels!("POINT", "Point"));
+            mixin(genLabels!("LSEG", "LSeg"));
+            //mixin(genLabels!("PATH", "Path"));
+            mixin(genLabels!("BOX", "Box"));
+            //mixin(genLabels!("POLYGON", "Polygon"));
+            mixin(genLabels!("LINE", "Line"));
+            mixin(genLabels!("CIRCLE", "Circle"));
+
+            // oid and reg*** aliases
+            case OID, REGPROC, REGPROCEDURE, REGOPER, REGOPERATOR,
+                 REGCLASS, REGTYPE, REGCONFIG, REGDICTIONARY:
                 static if (isConvertible!(T, uint))
                     return _to!T(read!uint);
-                else
-                    throw convError!T();
-            case INT2:
-                static if (isConvertible!(T, short))
-                    return _to!T(read!short);
-                else
-                    throw convError!T();
-            case INT4:
-                static if (isConvertible!(T, int))
-                    return _to!T(read!int);
-                else
-                    throw convError!T();
-            case INT8:
-                static if (isConvertible!(T, long))
-                    return _to!T(read!long);
-                else
-                    throw convError!T();
-            case FLOAT4:
-                static if (isConvertible!(T, float))
-                    return _to!T(read!float);
-                else
-                    throw convError!T();
-            case FLOAT8:
-                static if (isConvertible!(T, double))
-                    return _to!T(read!double);
                 else
                     throw convError!T();
             case BPCHAR, VARCHAR, TEXT, NAME, UNKNOWN: // bpchar, varchar, text, name, unknown
@@ -359,46 +393,6 @@ struct Message
             case BYTEA:
                 static if (isConvertible!(T, ubyte[]))
                     return _to!T(read!(ubyte[])(len));
-                else
-                    throw convError!T();
-            case UUID:
-                static if(isConvertible!(T, std.uuid.UUID))
-                    return _to!T(read!(std.uuid.UUID)());
-                else
-                    throw convError!T();
-            case CHAR:
-                static if (isConvertible!(T, char))
-                    return _to!T(read!char);
-                else
-                    throw convError!T();
-            case DATE:
-                static if (isConvertible!(T, Date))
-                    return _to!T(read!Date);
-                else
-                    throw convError!T();
-            case TIME:
-                static if (isConvertible!(T, TimeOfDay))
-                    return _to!T(read!TimeOfDay);
-                else
-                    throw convError!T();
-            case TIMESTAMP:
-                static if (isConvertible!(T, DateTime))
-                    return _to!T(read!DateTime);
-                else
-                    throw convError!T();
-            case TIMESTAMPTZ:
-                static if (isConvertible!(T, SysTime))
-                    return _to!T(read!SysTime);
-                else
-                    throw convError!T();
-            case INTERVAL:
-                static if (isConvertible!(T, core.time.Duration))
-                    return _to!T(read!(core.time.Duration));
-                else
-                    throw convError!T();
-            case TIMETZ:
-                static if (isConvertible!(T, SysTime))
-                    return _to!T(readTimeTz);
                 else
                     throw convError!T();
             case RECORD: // record and other composite types

@@ -461,6 +461,9 @@ class PGConnection
                         fields[i] = fi;
                     }
 
+                    import std.stdio;
+                    writeln("fields", fields);
+
                     return () @trusted { return cast(PGFields)fields; }();
                 case 'n':
                     // NoData (response to Describe)
@@ -584,7 +587,11 @@ class PGConnection
                     if (fieldLen == -1)
                         row.setNull(i);
                     else
+                    {
+                        import std.stdio;
+                        writeln(fields[i]);
                         () @trusted { row[i] = msg.readBaseType!(Row.ElemType)(fields[i].oid, fieldLen); }();
+                    }
                 }
             }
 
@@ -941,5 +948,3 @@ class PGConnection
             reloadEnumTypes();
         }
 }
-
-
