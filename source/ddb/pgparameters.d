@@ -7,6 +7,8 @@ import ddb.pgcommand : PGCommand;
 import ddb.types;
 import ddb.exceptions;
 
+@safe:
+
 /// Class representing single query parameter
 class PGParameter
 {
@@ -16,7 +18,7 @@ class PGParameter
     private Variant _value;
 
     /// Value bound to this parameter
-    @property Variant value()
+    @property Variant value() @trusted
     {
         return _value;
     }
@@ -45,7 +47,7 @@ class PGParameters
 
     package(ddb) int[] getOids()
     {
-        short[] keys = params.keys;
+        short[] keys = () @trusted { return params.keys; }();
         sort(keys);
 
         int[] oids = new int[params.length];
@@ -105,11 +107,11 @@ class PGParameters
         return params[index];
     }
 
-    int opApply(int delegate(ref PGParameter param) dg)
+    int opApply(int delegate(ref PGParameter param) @safe dg)
     {
         int result = 0;
 
-        foreach (number; sort(params.keys))
+        foreach (number; sort(() @trusted { return params.keys; }()))
         {
             result = dg(params[number]);
 

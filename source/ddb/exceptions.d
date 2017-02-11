@@ -24,7 +24,7 @@ class ServerErrorException: Exception
         super(msg, fn, ln);
     }
 
-    this(ResponseMessage error, string fn = __FILE__, size_t ln = __LINE__)
+    this(ResponseMessage error, string fn = __FILE__, size_t ln = __LINE__) @safe
     {
         super(error.toString(), fn, ln);
         this.error = error;

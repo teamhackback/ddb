@@ -15,6 +15,10 @@ import ddb.pgconnection : PGConnection;
 import ddb.types;
 import ddb.utils;
 
+//import ddb.db : Variant = SafeVariant;
+
+@safe:
+
 struct Message
 {
     PGConnection conn;
@@ -51,7 +55,7 @@ struct Message
         return x;
     }
 
-    void readCString(out string x)
+    void readCString(out string x) @trusted
     {
         ubyte* p = data.ptr + position;
 
@@ -68,7 +72,7 @@ struct Message
         return x;
     }
 
-    void readString(out string x, int len)
+    void readString(out string x, int len) @trusted
     {
         x = cast(string)(data[position .. position + len]);
         position += len;
@@ -187,7 +191,7 @@ struct Message
                 if (fieldLen == -1)
                     record.setNull(i);
                 else
-                    record[i] = readBaseType!(Record.ElemType)(fieldOid, fieldLen);
+                    () @trusted { record[i] = readBaseType!(Record.ElemType)(fieldOid, fieldLen); }();
             }
         }
 
@@ -225,12 +229,12 @@ struct Message
                 if (fieldLen == -1)
                 {
                     static if (isNullable!ElemType || isSomeString!ElemType)
-                        array[i] = null;
+                        () @trusted { array[i] = null; }();
                     else
                         throw new Exception("Can't set NULL value to non nullable type");
                 }
                 else
-                    array[i] = readBaseType!E(elementOid, fieldLen);
+                    () @trusted { array[i] = readBaseType!E(elementOid, fieldLen); }();
             }
         }
 
@@ -399,14 +403,14 @@ struct Message
                     throw convError!T();
             case RECORD: // record and other composite types
                 static if (isVariantN!T && T.allowed!(Variant[]))
-                    return T(readComposite!(Variant[]));
+                    return () @trusted { return T(readComposite!(Variant[])); }();
                 else
                     return readComposite!T;
             case _RECORD: // _record and other arrays
                 static if (isArray!T && !isSomeString!T)
                     return readArray!T;
                 else static if (isVariantN!T && T.allowed!(Variant[]))
-                    return T(readArray!(Variant[]));
+                    return () @trusted { return T(readArray!(Variant[])); }();
                 else
                     throw convError!T();
             case JSON:
@@ -433,6 +437,8 @@ struct Message
         throw convError!T();
     }
 }
+
+@safe:
 
 /**
 Class encapsulating errors and notices.

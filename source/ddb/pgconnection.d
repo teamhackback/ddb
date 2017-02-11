@@ -1,7 +1,7 @@
 module ddb.pgconnection;
 
 import std.bitmanip : bigEndianToNative;
-import std.conv : parse, text, to;
+import std.conv : text, to;
 import std.exception : enforce;
 import std.datetime : Clock, Date, DateTime, UTC;
 import std.string;
@@ -15,6 +15,8 @@ import ddb.pgresultset : PGResultSet;
 import ddb.pgstream : PGStream;
 import ddb.types;
 import ddb.utils : MD5toHex;
+
+@safe:
 
 /**
 Class representing connection to PostgreSQL server.
@@ -136,7 +138,7 @@ class PGConnection
             stream.write(cast(int)4);
         }
 
-        void sendBindMessage(string portalName, string statementName, PGParameters params)
+        void sendBindMessage(string portalName, string statementName, PGParameters params) @trusted
         {
             int paramsLen = 0;
             bool hasText = false;
@@ -342,7 +344,7 @@ class PGConnection
             string fvalue;
             ResponseMessage response = new ResponseMessage;
 
-            while (msg.read(ftype), ftype > 0)
+            for (msg.read(ftype); ftype > 0; msg.read(ftype))
             {
                 msg.readCString(fvalue);
                 response.fields[ftype] = fvalue;
@@ -459,7 +461,7 @@ class PGConnection
                         fields[i] = fi;
                     }
 
-                    return cast(PGFields)fields;
+                    return () @trusted { return cast(PGFields)fields; }();
                 case 'n':
                     // NoData (response to Describe)
                     return new immutable(PGField)[0];
@@ -582,7 +584,7 @@ class PGConnection
                     if (fieldLen == -1)
                         row.setNull(i);
                     else
-                        row[i] = msg.readBaseType!(Row.ElemType)(fields[i].oid, fieldLen);
+                        () @trusted { row[i] = msg.readBaseType!(Row.ElemType)(fields[i].oid, fieldLen); }();
                 }
             }
 
@@ -705,9 +707,7 @@ class PGConnection
             enforce("host" in params, new ParamException("Required parameter 'host' not found"));
             enforce("user" in params, new ParamException("Required parameter 'user' not found"));
 
-            string[string] p = cast(string[string])params;
-
-            ushort port = "port" in params? parse!ushort(p["port"]) : 5432;
+            ushort port = "port" in params? params["port"].to!ushort : 5432;
 
             version(Have_vibe_core)
             {
@@ -862,7 +862,7 @@ class PGConnection
         {
             auto cmd = new PGCommand(this, "SELECT oid, typelem FROM pg_type WHERE typcategory = 'A'");
             auto result = cmd.executeQuery!(uint, "arrayOid", uint, "elemOid");
-            scope(exit) result.destroy;
+            scope(exit) () @trusted { result.destroy; }();
 
             arrayTypes = null;
 
@@ -871,7 +871,7 @@ class PGConnection
                 arrayTypes[row.arrayOid] = row.elemOid;
             }
 
-            arrayTypes.rehash;
+            () @trusted { arrayTypes.rehash; }();
         }
 
         void reloadCompositeTypes()
@@ -879,7 +879,7 @@ class PGConnection
             auto cmd = new PGCommand(this, "SELECT a.attrelid, a.atttypid FROM pg_attribute a JOIN pg_type t ON
                                      a.attrelid = t.typrelid WHERE a.attnum > 0 ORDER BY a.attrelid, a.attnum");
             auto result = cmd.executeQuery!(uint, "typeOid", uint, "memberOid");
-            scope(exit) result.destroy;
+            scope(exit) () @trusted { result.destroy; }();
 
             compositeTypes = null;
 
@@ -897,14 +897,14 @@ class PGConnection
                 *memberOids ~= row.memberOid;
             }
 
-            compositeTypes.rehash;
+            () @trusted { compositeTypes.rehash; }();
         }
 
         void reloadEnumTypes()
         {
             auto cmd = new PGCommand(this, "SELECT enumtypid, oid, enumlabel FROM pg_enum ORDER BY enumtypid, oid");
             auto result = cmd.executeQuery!(uint, "typeOid", uint, "valueOid", string, "valueLabel");
-            scope(exit) result.destroy;
+            scope(exit) () @trusted { result.destroy; }();
 
             enumTypes = null;
 
@@ -916,7 +916,7 @@ class PGConnection
                 if (row.typeOid != lastOid)
                 {
                     if (lastOid > 0)
-                        (*enumValues).rehash;
+                        () @trusted { (*enumValues).rehash; }();
 
                     enumTypes[lastOid = row.typeOid] = null;
                     enumValues = &enumTypes[lastOid];
@@ -925,10 +925,12 @@ class PGConnection
                 (*enumValues)[row.valueOid] = row.valueLabel;
             }
 
-            if (lastOid > 0)
-                (*enumValues).rehash;
+            () @trusted {
+                if (lastOid > 0)
+                    (*enumValues).rehash;
 
-            enumTypes.rehash;
+                enumTypes.rehash;
+            }();
         }
 
         void reloadAllTypes()

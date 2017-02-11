@@ -6,11 +6,13 @@ import ddb.messages : Message;
 import ddb.pgconnection : PGConnection;
 import ddb.types : PGFields;
 
+@safe:
+
 /// Input range of DBRow!Specs
 class PGResultSet(Specs...)
 {
     alias Row = DBRow!Specs;
-    alias FetchRowDelegate = Row delegate(ref Message msg, ref PGFields fields);
+    alias FetchRowDelegate = Row delegate(ref Message msg, ref PGFields fields) @safe;
 
     private FetchRowDelegate fetchRow;
     private PGConnection conn;
@@ -85,7 +87,7 @@ class PGResultSet(Specs...)
         conn.activeResultSet = false;
     }
 
-    int opApply(int delegate(ref Row row) dg)
+    int opApply(int delegate(ref Row row) @safe dg)
     {
         int result = 0;
 
@@ -101,7 +103,7 @@ class PGResultSet(Specs...)
         return result;
     }
 
-    int opApply(int delegate(ref size_t i, ref Row row) dg)
+    int opApply(int delegate(ref size_t i, ref Row row) @safe dg)
     {
         int result = 0;
         size_t i;

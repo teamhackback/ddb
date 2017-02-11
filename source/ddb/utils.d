@@ -16,9 +16,9 @@ char[32] MD5toHex(T...)(in T data)
 template _to(T)
 {
     static if (isVariantN!T)
-        T _to(S)(S value) { T t = value; return t; }
+        T _to(S)(S value) @trusted { T t = value; return t; }
     else
-        T _to(A...)(A args) { return std.conv.to!T(args); }
+        T _to(A...)(A args) @trusted { return std.conv.to!T(args); }
 }
 
 template isConvertible(T, S)

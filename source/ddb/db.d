@@ -154,8 +154,46 @@ assert(row.axis == Axis.x);
 assert(row.s == "anotherText");
 ---
 */
+
+// Pseudo-@safe wrapper around Variant
+//struct SafeVariantN(size_t maxDataSize, AllowedTypesParam...)
+//{
+    //VariantN!(maxDataSize, AllowedTypesParam) _variant;
+    //alias _variant this;
+
+    //this(typeof(_variant) v)
+    //{
+        //_variant = v;
+    //}
+
+    //this(T)(T value) @trusted
+    //{
+        //static assert(_variant.allowed!(T), "Cannot store a " ~ T.stringof
+            //~ " in a " ~ VariantN.stringof);
+        //_variant.opAssign(value);
+    //}
+
+    //~this() @trusted {
+        //_variant.destroy();
+    //}
+
+    //this(this) @trusted {}
+
+    //SafeVariantN opAssign(T)(T rhs) @trusted
+    //{
+        //static if (!is(T == typeof(null)))
+            //return typeof(this)(_variant.opAssign(rhs._variant));
+        //else
+            //return typeof(this)(_variant.opAssign(null));
+    //}
+//}
+
+//alias SafeVariant = SafeVariantN!(maxSize!(creal, char[], void delegate()));
+
 struct DBRow(Specs...)
 {
+    @safe:
+
     static if (Specs.length == 0)
         alias Variant[] T;
     else static if (Specs.length == 1)
@@ -179,7 +217,7 @@ struct DBRow(Specs...)
             base.length = length;
         }
 
-        void setNull(size_t index)
+        void setNull(size_t index) @trusted
         {
             static if (isNullable!ElemType)
                 base[index] = null;
@@ -189,32 +227,32 @@ struct DBRow(Specs...)
 
         ColumnToIndexDelegate columnToIndex;
 
-        ElemType opIndex(string column, size_t index)
+        ElemType opIndex(string column, size_t index) @trusted
         {
             return base[columnToIndex(column, index)];
         }
 
-        ElemType opIndexAssign(ElemType value, string column, size_t index)
+        ElemType opIndexAssign(ElemType value, string column, size_t index) @trusted
         {
             return base[columnToIndex(column, index)] = value;
         }
 
-        ElemType opIndex(string column)
+        ElemType opIndex(string column) @trusted
         {
             return base[columnToIndex(column, 0)];
         }
 
-        ElemType opIndexAssign(ElemType value, string column)
+        ElemType opIndexAssign(ElemType value, string column) @trusted
         {
             return base[columnToIndex(column, 0)] = value;
         }
 
-        ElemType opIndex(size_t index)
+        ElemType opIndex(size_t index) @trusted
         {
             return base[index];
         }
 
-        ElemType opIndexAssign(ElemType value, size_t index)
+        ElemType opIndexAssign(ElemType value, size_t index) @trusted
         {
             return base[index] = value;
         }
@@ -294,7 +332,7 @@ struct DBRow(Specs...)
         }
     }
 
-    string toString()
+    string toString() @trusted
     {
         return to!string(base);
     }
@@ -339,6 +377,13 @@ template isVariantN(T)
     //static if (is(T X == VariantN!(N, Types), uint N, Types...)) // doesn't work due to BUG 5784
     static if (T.stringof.length >= 8 && T.stringof[0..8] == "VariantN") // ugly temporary workaround
         enum isVariantN = true;
+    //else static if (hasMember!(T, "_variant"))
+    //{
+        //static if (typeof(T.init._variant).stringof[0..8] == "VariantN")
+            //enum isVariantN = true;
+        //else
+            //enum isVariantN = false;
+    //}
     else
         enum isVariantN = false;
 }

@@ -144,6 +144,8 @@ public import ddb.exceptions;
 
 version(Have_vibe_core)
 {
+    @safe:
+
     class PostgresDB {
         import vibe.core.connectionpool : ConnectionPool;
         import ddb.pgconnection : PGConnection;
@@ -166,8 +168,8 @@ version(Have_vibe_core)
             return new PGConnection(m_params);
         }
 
-        @property void maxConcurrency(uint val) { m_pool.maxConcurrency = val; }
-        @property uint maxConcurrency() { return m_pool.maxConcurrency; }
+        @property void maxConcurrency(uint val) @trusted { m_pool.maxConcurrency = val; }
+        @property uint maxConcurrency() @trusted { return m_pool.maxConcurrency; }
     }
 }
 else

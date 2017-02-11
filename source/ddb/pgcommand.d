@@ -8,6 +8,8 @@ import ddb.pgparameters : PGParameter, PGParameters;
 import ddb.pgresultset : PGResultSet;
 import ddb.types;
 
+@safe:
+
 /// Class encapsulating prepared or non-prepared statements (commands).
 class PGCommand
 {

@@ -5,6 +5,8 @@ import std.datetime;
 
 import ddb.types;
 
+@safe:
+
 class PGStream
 {
     version (Have_vibe_core)
@@ -102,7 +104,7 @@ class PGStream
 
     void writeString(string x)
     {
-        ubyte[] ub = cast(ubyte[])(x);
+        ubyte[] ub = () @trusted { return cast(ubyte[])(x); }();
         write(ub);
     }
 
