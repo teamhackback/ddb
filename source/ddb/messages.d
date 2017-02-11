@@ -436,7 +436,7 @@ Class encapsulating errors and notices.
 
 This class provides access to fields of ErrorResponse and NoticeResponse
 sent by the server. More information about these fields can be found
-$(LINK2 http://www.postgresql.org/docs/9.0/static/protocol-error-fields.html,here).
+$(LINK2 http://www.postgresql.org/docs/9.6/static/protocol-error-fields.html,here).
 */
 class ResponseMessage
 {
@@ -500,6 +500,36 @@ class ResponseMessage
     @property string where()
     {
         return getOptional('W');
+    }
+
+    /// ditto
+    @property string schemaName()
+    {
+        return getOptional('s');
+    }
+
+    /// ditto
+    @property string tableName()
+    {
+        return getOptional('t');
+    }
+
+    /// ditto
+    @property string columnName()
+    {
+        return getOptional('c');
+    }
+
+    /// ditto
+    @property string dataTypeName()
+    {
+        return getOptional('d');
+    }
+
+    /// ditto
+    @property string constraintName()
+    {
+        return getOptional('n');
     }
 
     /// ditto

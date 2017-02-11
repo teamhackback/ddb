@@ -16,6 +16,22 @@ import ddb.pgstream : PGStream;
 import ddb.types;
 import ddb.utils : MD5toHex;
 
+// Vibe.d provides a @safe RCAllocator
+version(Have_vibe_core)
+{
+    import vibe.internal.freelistref : FreeListRef;
+}
+else
+{
+    struct FreeListRef(T)
+    {
+        static auto opCall(ARGS...)(ARGS args)
+        {
+            return new T(args);
+        }
+    }
+}
+
 @safe:
 
 /**
@@ -360,6 +376,11 @@ class PGConnection
             stream.write(cast(int)4);
         }
 
+        void sendQueryMessage(string query)
+        {
+            stream.write('Q');
+        }
+
         ResponseMessage handleResponseMessage(Message msg)
         {
             enforce(msg.data.length >= 2);
@@ -701,16 +722,25 @@ class PGConnection
             assert(0);
         }
 
-        void handleAsync(scope const ref Message msg)
+        void handleAsync(scope ref Message msg)
         {
             import std.stdio;
-            writeln("msg %s: %s", msg.type, msg.data);
+            writefln("msg %s: %s", msg.type, msg.data);
             switch (msg.type)
             {
                 case 'A':
-                    writeln("[Async] Notification");
+                    int msgLength = msg.read!int;
+                    int originPid = msg.read!int;
+                    string channelName = msg.readCString;
+                    string payload = msg.readCString;
+                    writeln("[Async] Notification: ", channelName, ":", payload);
+                    break;
+                case 'Z':
+                    // ReadyForQuery (readiness to process new command)
+                    writeln("[Async] Z");
+                    break;
                 default:
-                    writeln("[Async] Unknonw Notification");
+                    writeln("[Async] Unknonw Notification", );
             }
         }
 
@@ -774,7 +804,6 @@ class PGConnection
             {
                 case 'E', 'N':
                     // ErrorResponse, NoticeResponse
-
                     ResponseMessage response = handleResponseMessage(msg);
 
                     if (msg.type == 'N')
@@ -852,10 +881,11 @@ class PGConnection
                     msg.read(cast(char)trStatus);
 
                     // check for validity
+                    with (TransactionStatus)
                     switch (trStatus)
                     {
-                        case 'I', 'T', 'E': break;
-                        default: throw new Exception("Invalid transaction status");
+                        case OutsideTransaction, InsideTransaction, InsideFailedTransaction: break;
+                        default: throw new Exception("Invalid transaction status: " ~ trStatus);
                     }
 
                     // connection is opened and now it's possible to send queries
@@ -878,21 +908,21 @@ class PGConnection
         /// Shorthand methods using temporary PGCommand. Semantics is the same as PGCommand's.
         ulong executeNonQuery(string query)
         {
-            scope cmd = new PGCommand(this, query);
+            scope cmd = FreeListRef!PGCommand(this, query);
             return cmd.executeNonQuery();
         }
 
         /// ditto
         PGResultSet!Specs executeQuery(Specs...)(string query)
         {
-            scope cmd = new PGCommand(this, query);
+            scope cmd = FreeListRef!PGCommand(this, query);
             return cmd.executeQuery!Specs();
         }
 
         /// ditto
         DBRow!Specs executeRow(Specs...)(string query, bool throwIfMoreRows = true)
         {
-            scope cmd = new PGCommand(this, query);
+            scope cmd = FreeListRef!PGCommand(this, query);
             return cmd.executeRow!Specs(throwIfMoreRows);
         }
 
@@ -905,7 +935,7 @@ class PGConnection
 
         void reloadArrayTypes()
         {
-            auto cmd = new PGCommand(this, "SELECT oid, typelem FROM pg_type WHERE typcategory = 'A'");
+            scope cmd = FreeListRef!PGCommand(this, "SELECT oid, typelem FROM pg_type WHERE typcategory = 'A'");
             auto result = cmd.executeQuery!(uint, "arrayOid", uint, "elemOid");
             scope(exit) () @trusted { result.destroy; }();
 
@@ -921,7 +951,7 @@ class PGConnection
 
         void reloadCompositeTypes()
         {
-            auto cmd = new PGCommand(this, "SELECT a.attrelid, a.atttypid FROM pg_attribute a JOIN pg_type t ON
+            scope cmd = FreeListRef!PGCommand(this, "SELECT a.attrelid, a.atttypid FROM pg_attribute a JOIN pg_type t ON
                                      a.attrelid = t.typrelid WHERE a.attnum > 0 ORDER BY a.attrelid, a.attnum");
             auto result = cmd.executeQuery!(uint, "typeOid", uint, "memberOid");
             scope(exit) () @trusted { result.destroy; }();
@@ -947,7 +977,7 @@ class PGConnection
 
         void reloadEnumTypes()
         {
-            auto cmd = new PGCommand(this, "SELECT enumtypid, oid, enumlabel FROM pg_enum ORDER BY enumtypid, oid");
+            scope cmd = FreeListRef!PGCommand(this, "SELECT enumtypid, oid, enumlabel FROM pg_enum ORDER BY enumtypid, oid");
             auto result = cmd.executeQuery!(uint, "typeOid", uint, "valueOid", string, "valueLabel");
             scope(exit) () @trusted { result.destroy; }();
 
