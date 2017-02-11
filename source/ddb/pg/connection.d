@@ -8,9 +8,10 @@ import std.string : indexOf, lastIndexOf;
 
 import ddb.db : DBRow;
 import ddb.pg.exceptions;
-import ddb.pg.messages : Message, parseCommandCompletion, parseDataRow, parseReadyForQuery, parseRowDescription, RequestMessageTypes, ResponseMessage, ResponseMessageTypes;
+import ddb.pg.messages : Message, ResponseMessage;
 import ddb.pg.command : PGCommand;
 import ddb.pg.parameters : PGParameter, PGParameters;
+import ddb.pg.parsers : parseCommandCompletion, parseDataRow, parseReadyForQuery, parseRowDescription;
 import ddb.pg.resultset : PGResultSet;
 import ddb.pg.stream : PGStream;
 import ddb.pg.types;
@@ -128,7 +129,7 @@ class PGConnection
         {
             int len = cast(int)(4 + password.length + 1);
 
-            stream.write(RequestMessageTypes.Password);
+            stream.write(PGRequestMessageTypes.Password);
             stream.write(len);
             stream.writeCString(password);
         }
@@ -137,7 +138,7 @@ class PGConnection
         {
             int len = cast(int)(4 + statementName.length + 1 + query.length + 1 + 2 + oids.length * 4);
 
-            stream.write(RequestMessageTypes.Parse);
+            stream.write(PGRequestMessageTypes.Parse);
             stream.write(len);
             stream.writeCString(statementName);
             stream.writeCString(query);
@@ -149,7 +150,7 @@ class PGConnection
 
         void sendCloseMessage(DescribeType type, string name)
         {
-            stream.write(RequestMessageTypes.Close);
+            stream.write(PGRequestMessageTypes.Close);
             stream.write(cast(int)(4 + 1 + name.length + 1));
             stream.write(cast(char)type);
             stream.writeCString(name);
@@ -157,7 +158,7 @@ class PGConnection
 
         void sendTerminateMessage()
         {
-            stream.write(RequestMessageTypes.Terminate);
+            stream.write(PGRequestMessageTypes.Terminate);
             stream.write(cast(int)4);
         }
 
@@ -169,7 +170,7 @@ class PGConnection
             int len = cast(int)( 4 + portalName.length + 1 + statementName.length + 1 + (hasText ? (params.length*2) : 2) + 2 + 2 +
                 params.length * 4 + paramsLen + 2 + 2 );
 
-            stream.write(RequestMessageTypes.Bind);
+            stream.write(PGRequestMessageTypes.Bind);
             stream.write(len);
             stream.writeCString(portalName);
             stream.writeCString(statementName);
@@ -211,7 +212,7 @@ class PGConnection
 
         void sendDescribeMessage(DescribeType type, string name)
         {
-            stream.write(RequestMessageTypes.Describe);
+            stream.write(PGRequestMessageTypes.Describe);
             stream.write(cast(int)(4 + 1 + name.length + 1));
             stream.write(cast(char)type);
             stream.writeCString(name);
@@ -219,7 +220,7 @@ class PGConnection
 
         void sendExecuteMessage(string portalName, int maxRows)
         {
-            stream.write(RequestMessageTypes.Execute);
+            stream.write(PGRequestMessageTypes.Execute);
             stream.write(cast(int)(4 + portalName.length + 1 + 4));
             stream.writeCString(portalName);
             stream.write(cast(int)maxRows);
@@ -227,19 +228,19 @@ class PGConnection
 
         void sendFlushMessage()
         {
-            stream.write(RequestMessageTypes.Flush);
+            stream.write(PGRequestMessageTypes.Flush);
             stream.write(cast(int)4);
         }
 
         void sendSyncMessage()
         {
-            stream.write(RequestMessageTypes.Sync);
+            stream.write(PGRequestMessageTypes.Sync);
             stream.write(cast(int)4);
         }
 
         void sendQueryMessage(string query)
         {
-            stream.write(RequestMessageTypes.Query);
+            stream.write(PGRequestMessageTypes.Query);
             stream.write(cast(int)(4 + query.length + 1));
             stream.writeCString(query);
         }
@@ -277,7 +278,7 @@ class PGConnection
 
             Message msg = getMessage();
 
-            with (ResponseMessageTypes)
+            with (PGResponseMessageTypes)
             switch (msg.type)
             {
                 case ErrorResponse:
@@ -303,7 +304,7 @@ class PGConnection
 
             Message msg = getMessage();
 
-            with (ResponseMessageTypes)
+            with (PGResponseMessageTypes)
             switch (msg.type)
             {
                 case ErrorResponse:
@@ -330,7 +331,7 @@ class PGConnection
 
             Message msg = getMessage();
 
-            with (ResponseMessageTypes)
+            with (PGResponseMessageTypes)
             switch (msg.type)
             {
                 case ErrorResponse:
@@ -363,7 +364,7 @@ class PGConnection
 
             Message msg = getMessage();
 
-            with (ResponseMessageTypes)
+            with (PGResponseMessageTypes)
             switch (msg.type)
             {
                 case ErrorResponse:
@@ -455,7 +456,7 @@ class PGConnection
                 // async notice, notification
                 handleAsync(msg);
             }
-            while (msg.type != ResponseMessageTypes.ReadyForQuery);
+            while (msg.type != PGResponseMessageTypes.ReadyForQuery);
             // TODO: triggers InvalidMemoryError
             //parseReadyForQuery(msg, this);
         }
@@ -476,7 +477,7 @@ class PGConnection
 
             Message msg = getMessage();
 
-            with (ResponseMessageTypes)
+            with (PGResponseMessageTypes)
             switch (msg.type)
             {
                 case DataRow:
@@ -517,7 +518,7 @@ class PGConnection
             import std.stdio;
             writefln("msg %s: %s", msg.type, msg.data);
 
-            with (ResponseMessageTypes)
+            with (PGResponseMessageTypes)
             switch (msg.type)
             {
                 case NotificationResponse:
@@ -593,7 +594,7 @@ class PGConnection
 
             Message msg = getMessage();
 
-            with (ResponseMessageTypes)
+            with (PGResponseMessageTypes)
             switch (msg.type)
             {
                 case ErrorResponse, NoticeResponse:
@@ -694,7 +695,7 @@ class PGConnection
 
             Message msg = getMessage();
 
-            with (ResponseMessageTypes)
+            with (PGResponseMessageTypes)
             switch (msg.type)
             {
                 case ErrorResponse:
@@ -734,7 +735,7 @@ class PGConnection
 
             Message msg = getMessage();
 
-            with (ResponseMessageTypes)
+            with (PGResponseMessageTypes)
             switch (msg.type)
             {
                 case RowDescription:

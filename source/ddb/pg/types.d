@@ -2,6 +2,50 @@ module ddb.pg.types;
 
 import std.datetime;
 
+enum PGResponseMessageTypes : char {
+    RowDescription = 'T',
+    DataRow = 'D',
+    CommandComplete = 'C',
+    EmptyQueryResponse = 'I',
+    PortalSuspended = 's',
+    ReadyForQuery = 'Z',
+    ErrorResponse = 'E',
+    BackendKeyData = 'K',
+    ParameterStatus = 'S',
+    AuthenticationXXXX = 'R',
+    NoticeResponse = 'N',
+    ParseComplete = '1',
+    BindComplete = '2',
+    CloseComplete = '3',
+    NoData = 'n',
+    NotificationResponse = 'A',
+
+    // TODO:
+    FunctionCallResponse = 'V',
+    ParameterDescription = 't',
+    CopyDone = 'd',
+    CopyFail = 'f',
+    CopyInResponse = 'G',
+    CopyOutResponse = 'H',
+    CopyBothResponse = 'W',
+}
+
+enum PGRequestMessageTypes : char {
+    Parse = 'P',
+    Password = 'p',
+    Close = 'C',
+    Terminate = 'X',
+    Bind = 'B',
+    Describe = 'D',
+    Execute = 'E',
+    Flush = 'H',
+    Sync = 'S',
+    Query = 'Q',
+    // TODO:
+    FunctionCall = 'F',
+    CopyData = 'd',
+}
+
 const PGEpochDate = Date(2000, 1, 1);
 const PGEpochDay = PGEpochDate.dayOfGregorianCal;
 const PGEpochTime = TimeOfDay(0, 0, 0);
