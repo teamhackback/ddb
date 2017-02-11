@@ -386,20 +386,16 @@ struct Message
         }
     }
 
-    T readBaseType(T)(uint oid, bool binaryMode, int len = 0)
-    {
-        auto convError(T)()
-        {
-            string* type = oid in baseTypes;
-            return new ConvException("Can't convert PostgreSQL's type " ~ (type ? *type : to!string(oid)) ~ " to " ~ T.stringof);
-        }
+    private static struct Pair { string pgtype, dtype; }
 
-        // for a PGType generate label and its corresponding array label parsing
-        template genLabels(string pgtype, string dtype) {
-            // read: binary data
-            // parse: plaintext data
-            enum genLabels = "
-                case " ~ pgtype ~ ":
+    // for a PGType generate label and its corresponding array label parsing
+    private static string genLabels(Pair[] pairs) {
+        // read: binary data
+        // parse: plaintext data
+        string s;
+            foreach (pair; pairs) {
+                with(pair)
+                s ~= "case " ~ pgtype ~ ":
                     static if (isConvertible!(T, " ~ dtype ~"))
                         if (binaryMode)
                             return _to!T(read!(" ~ dtype ~ "));
@@ -411,37 +407,46 @@ struct Message
                     static if (isConvertible!(T, " ~ dtype ~ "[]))
                         return _to!T(readArray!(" ~ dtype ~ "[])(binaryMode));
                     else
-                        throw convError!T();
-            ";
+                        throw convError!T(); ";
+            }
+        return s;
+    }
+
+    T readBaseType(T)(uint oid, bool binaryMode, int len = 0)
+    {
+        auto convError(T)()
+        {
+            string* type = oid in baseTypes;
+            return new ConvException("Can't convert PostgreSQL's type " ~ (type ? *type : to!string(oid)) ~ " to " ~ T.stringof);
         }
 
         with (PGType)
         switch (oid)
         {
             // TODO: increases compilation time from 4s to 6s
-            mixin(genLabels!("BOOLEAN", "bool"));
-            mixin(genLabels!("INT2", "short"));
-            mixin(genLabels!("INT4", "int"));
-            mixin(genLabels!("INT8", "long"));
-            mixin(genLabels!("FLOAT4", "float"));
-            mixin(genLabels!("FLOAT8", "double"));
-            //mixin(genLabels!("UUID", "std.uuid.UUID"));
-            mixin(genLabels!("CHAR", "char"));
-            mixin(genLabels!("DATE", "Date"));
-            mixin(genLabels!("TIME", "TimeOfDay"));
-            mixin(genLabels!("TIMESTAMP", "DateTime"));
-            mixin(genLabels!("TIMESTAMPTZ", "SysTime"));
-            mixin(genLabels!("INTERVAL", "core.time.Duration"));
-            mixin(genLabels!("TIMETZ", "SysTime"));
-            /**
-            mixin(genLabels!("POINT", "Point"));
-            mixin(genLabels!("LSEG", "LSeg"));
-            //mixin(genLabels!("PATH", "Path"));
-            mixin(genLabels!("BOX", "Box"));
-            //mixin(genLabels!("POLYGON", "Polygon"));
-            mixin(genLabels!("LINE", "Line"));
-            mixin(genLabels!("CIRCLE", "Circle"));
-            */
+            mixin(genLabels([
+                Pair("BOOLEAN", "bool"),
+                Pair("INT2", "short"),
+                Pair("INT4", "int"),
+                Pair("INT8", "long"),
+                Pair("FLOAT4", "float"),
+                Pair("FLOAT8", "double"),
+                Pair("CHAR", "char"),
+                Pair("DATE", "Date"),
+                Pair("TIME", "TimeOfDay"),
+                Pair("TIMESTAMP", "DateTime"),
+                Pair("TIMESTAMPTZ", "SysTime"),
+                Pair("INTERVAL", "core.time.Duration"),
+                Pair("TIMETZ", "SysTime"),
+                Pair("UUID", "std.uuid.UUID"),
+                Pair("POINT", "Point"),
+                Pair("LSEG", "LSeg"),
+                Pair("BOX", "Box"),
+                Pair("LINE", "Line"),
+                Pair("CIRCLE", "Circle"),
+                //mixin(genLabels!("POLYGON", "Polygon"),
+                //mixin(genLabels!("PATH", "Path"));
+            ]));
 
             // oid and reg*** aliases
             case OID, REGPROC, REGPROCEDURE, REGOPER, REGOPERATOR,

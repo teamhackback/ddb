@@ -3,6 +3,9 @@ module ddb.formats;
 import std.conv;
 import std.datetime;
 import std.traits;
+import std.uuid : UUID;
+
+import ddb.types;
 
 /**
 This modules handles plain text responses from Postgres
@@ -42,4 +45,29 @@ void parseImpl(out core.time.Duration x, string s)
 void parseImpl(out DateTime x, string s)
 {
     x = DateTime.fromISOString(s);
+}
+
+void parseImpl(out UUID x, string s)
+{
+    x = s.to!UUID;
+}
+
+void parseImpl(out Circle x, string s)
+{
+    assert(0, "Not implemented");
+}
+
+void parseImpl(out Line x, string s)
+{
+    assert(0, "Not implemented");
+}
+
+void parseImpl(out Box x, string s)
+{
+    assert(0, "Not implemented");
+}
+
+void parseImpl(out Point x, string s)
+{
+    assert(0, "Not implemented");
 }
