@@ -1,4 +1,4 @@
-module ddb.messages;
+module ddb.pg.messages;
 
 import std.ascii : LetterCase;
 import std.bitmanip : bigEndianToNative;
@@ -10,9 +10,9 @@ import std.uuid : UUID;
 static import std.uuid;
 
 import ddb.db : DBRow, isNullable, isVariantN, nullableTarget;
-import ddb.exceptions;
-import ddb.pgconnection : PGConnection;
-import ddb.types;
+import ddb.pg.exceptions;
+import ddb.pg.connection : PGConnection;
+import ddb.pg.types;
 import ddb.utils;
 
 //import ddb.db : Variant = SafeVariant;
@@ -102,7 +102,7 @@ struct Message
         }
         else
         {
-            import ddb.formats : parseImpl;
+            import ddb.pg.formats : parseImpl;
             T x;
             parseImpl(x, readString(len));
             return x;
@@ -674,7 +674,7 @@ PGFields parseRowDescription(scope ref Message msg)
     return () @trusted { return cast(PGFields)fields; }();
 }
 
-import ddb.pgresultset : PGResultSet;
+import ddb.pg.resultset : PGResultSet;
 
 PGResultSet!Specs parseDataRow(Specs...)(scope ref Message msg, PGResultSet!Specs result,
                                    scope ref PGFields fields, PGConnection conn)

@@ -135,12 +135,12 @@ PURPOSE. THE SOFTWARE PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERS
 CALIFORNIA HAS NO OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS,
 OR MODIFICATIONS.
 */
-module ddb.postgres;
+module ddb.pg;
 
 public import ddb.db;
-public import ddb.pgcommand : PGCommand;
-public import ddb.pgconnection : PGConnection;
-public import ddb.exceptions;
+public import ddb.pg.command : PGCommand;
+public import ddb.pg.connection : PGConnection;
+public import ddb.pg.exceptions;
 
 version(Have_vibe_core)
 {
@@ -148,7 +148,7 @@ version(Have_vibe_core)
 
     class PostgresDB {
         import vibe.core.connectionpool : ConnectionPool;
-        import ddb.pgconnection : PGConnection;
+        import ddb.pg.connection : PGConnection;
 
         private {
             string[string] m_params;

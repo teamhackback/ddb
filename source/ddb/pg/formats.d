@@ -1,11 +1,11 @@
-module ddb.formats;
+module ddb.pg.formats;
 
 import std.conv;
 import std.datetime;
 import std.traits;
 import std.uuid : UUID;
 
-import ddb.types;
+import ddb.pg.types;
 
 /**
 This modules handles plain text responses from Postgres

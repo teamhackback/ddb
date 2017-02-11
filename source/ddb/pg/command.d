@@ -1,12 +1,12 @@
-module ddb.pgcommand;
+module ddb.pg.command;
 
 import std.exception : enforce;
 
-import ddb.messages : Message, ResponseMessage;
-import ddb.pgconnection : PGConnection;
-import ddb.pgparameters : PGParameter, PGParameters;
-import ddb.pgresultset : PGResultSet;
-import ddb.types;
+import ddb.pg.messages : Message, ResponseMessage;
+import ddb.pg.connection : PGConnection;
+import ddb.pg.parameters : PGParameter, PGParameters;
+import ddb.pg.resultset : PGResultSet;
+import ddb.pg.types;
 
 @safe:
 

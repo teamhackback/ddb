@@ -1,12 +1,12 @@
-module ddb.pgparameters;
+module ddb.pg.parameters;
 
 import std.algorithm.sorting : sort;
 import std.variant : Variant;
 
-import ddb.pgstream : PGStream;
-import ddb.pgcommand : PGCommand;
-import ddb.types;
-import ddb.exceptions;
+import ddb.pg.stream : PGStream;
+import ddb.pg.command : PGCommand;
+import ddb.pg.types;
+import ddb.pg.exceptions;
 
 @safe:
 
@@ -126,7 +126,7 @@ class PGParameters
     // length of all params on the binary stream (in bytes)
     package(ddb) int calcLen(out bool hasText) @trusted
     {
-        import ddb.exceptions;
+        import ddb.pg.exceptions;
         import std.conv : to;
 
         int paramsLen;

@@ -1,6 +1,6 @@
-module ddb.exceptions;
+module ddb.pg.exceptions;
 
-import ddb.messages : ResponseMessage;
+import ddb.pg.messages : ResponseMessage;
 import std.exception;
 public import std.exception : enforce;
 

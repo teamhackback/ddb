@@ -1,9 +1,9 @@
-module ddb.pgstream;
+module ddb.pg.stream;
 
 import std.bitmanip : nativeToBigEndian;
 import std.datetime;
 
-import ddb.types;
+import ddb.pg.types;
 
 @safe:
 

@@ -1,10 +1,10 @@
-module ddb.pgresultset;
+module ddb.pg.resultset;
 
 import ddb.db : DBRow;
-import ddb.exceptions;
-import ddb.messages : Message;
-import ddb.pgconnection : PGConnection;
-import ddb.types : PGFields;
+import ddb.pg.exceptions;
+import ddb.pg.messages : Message;
+import ddb.pg.connection : PGConnection;
+import ddb.pg.types : PGFields;
 
 @safe:
 

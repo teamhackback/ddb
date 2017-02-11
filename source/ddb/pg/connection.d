@@ -1,4 +1,4 @@
-module ddb.pgconnection;
+module ddb.pg.connection;
 
 import std.bitmanip : bigEndianToNative;
 import std.conv : text, to;
@@ -7,13 +7,13 @@ import std.datetime : Clock, Date, DateTime, UTC;
 import std.string : indexOf, lastIndexOf;
 
 import ddb.db : DBRow;
-import ddb.exceptions;
-import ddb.messages : Message, parseCommandCompletion, parseDataRow, parseReadyForQuery, parseRowDescription, RequestMessageTypes, ResponseMessage, ResponseMessageTypes;
-import ddb.pgcommand : PGCommand;
-import ddb.pgparameters : PGParameter, PGParameters;
-import ddb.pgresultset : PGResultSet;
-import ddb.pgstream : PGStream;
-import ddb.types;
+import ddb.pg.exceptions;
+import ddb.pg.messages : Message, parseCommandCompletion, parseDataRow, parseReadyForQuery, parseRowDescription, RequestMessageTypes, ResponseMessage, ResponseMessageTypes;
+import ddb.pg.command : PGCommand;
+import ddb.pg.parameters : PGParameter, PGParameters;
+import ddb.pg.resultset : PGResultSet;
+import ddb.pg.stream : PGStream;
+import ddb.pg.types;
 import ddb.utils : MD5toHex;
 
 // Vibe.d provides a @safe RCAllocator
