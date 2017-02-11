@@ -53,6 +53,7 @@ enum PGType : int
     NUMERIC = 1700,
     FLOAT4 = 700,
     FLOAT8 = 701,
+    UNKNOWN = 705,
 
     INET = 869,
 
@@ -63,6 +64,11 @@ enum PGType : int
     TIMESTAMPTZ = 1184,
     INTERVAL = 1186,
     TIMETZ = 1266,
+
+    RECORD =  2249,
+    _RECORD = 2287,
+
+    UUID = 2950,
 
     JSONB = 3802,
 };

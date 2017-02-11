@@ -7,6 +7,7 @@ import std.datetime;
 import std.traits;
 import std.variant : Variant;
 import std.uuid : UUID;
+static import std.uuid;
 
 import ddb.db : DBRow, isNullable, isVariantN, nullableTarget;
 import ddb.exceptions;
@@ -308,115 +309,116 @@ struct Message
             return new ConvException("Can't convert PostgreSQL's type " ~ (type ? *type : to!string(oid)) ~ " to " ~ T.stringof);
         }
 
+        with (PGType)
         switch (oid)
         {
-            case 16: // bool
+            case BOOLEAN:
                 static if (isConvertible!(T, bool))
                     return _to!T(read!bool);
                 else
                     throw convError!T();
-            case 26, 24, 2202, 2203, 2204, 2205, 2206, 3734, 3769: // oid and reg*** aliases
+            case OID, REGPROC, 2202, 2203, 2204, 2205, 2206, 3734, 3769: // oid and reg*** aliases
                 static if (isConvertible!(T, uint))
                     return _to!T(read!uint);
                 else
                     throw convError!T();
-            case 21: // int2
+            case INT2:
                 static if (isConvertible!(T, short))
                     return _to!T(read!short);
                 else
                     throw convError!T();
-            case 23: // int4
+            case INT4:
                 static if (isConvertible!(T, int))
                     return _to!T(read!int);
                 else
                     throw convError!T();
-            case 20: // int8
+            case INT8:
                 static if (isConvertible!(T, long))
                     return _to!T(read!long);
                 else
                     throw convError!T();
-            case 700: // float4
+            case FLOAT4:
                 static if (isConvertible!(T, float))
                     return _to!T(read!float);
                 else
                     throw convError!T();
-            case 701: // float8
+            case FLOAT8:
                 static if (isConvertible!(T, double))
                     return _to!T(read!double);
                 else
                     throw convError!T();
-            case 1042, 1043, 25, 19, 705: // bpchar, varchar, text, name, unknown
+            case BPCHAR, VARCHAR, TEXT, NAME, UNKNOWN: // bpchar, varchar, text, name, unknown
                 static if (isConvertible!(T, string))
                     return _to!T(readString(len));
                 else
                     throw convError!T();
-            case 17: // bytea
+            case BYTEA:
                 static if (isConvertible!(T, ubyte[]))
                     return _to!T(read!(ubyte[])(len));
                 else
                     throw convError!T();
-            case 2950: // UUID
-                static if(isConvertible!(T, UUID))
-                    return _to!T(read!UUID());
+            case UUID:
+                static if(isConvertible!(T, std.uuid.UUID))
+                    return _to!T(read!(std.uuid.UUID)());
                 else
                     throw convError!T();
-            case 18: // "char"
+            case CHAR:
                 static if (isConvertible!(T, char))
                     return _to!T(read!char);
                 else
                     throw convError!T();
-            case 1082: // date
+            case DATE:
                 static if (isConvertible!(T, Date))
                     return _to!T(read!Date);
                 else
                     throw convError!T();
-            case 1083: // time
+            case TIME:
                 static if (isConvertible!(T, TimeOfDay))
                     return _to!T(read!TimeOfDay);
                 else
                     throw convError!T();
-            case 1114: // timestamp
+            case TIMESTAMP:
                 static if (isConvertible!(T, DateTime))
                     return _to!T(read!DateTime);
                 else
                     throw convError!T();
-            case 1184: // timestamptz
+            case TIMESTAMPTZ:
                 static if (isConvertible!(T, SysTime))
                     return _to!T(read!SysTime);
                 else
                     throw convError!T();
-            case 1186: // interval
+            case INTERVAL:
                 static if (isConvertible!(T, core.time.Duration))
                     return _to!T(read!(core.time.Duration));
                 else
                     throw convError!T();
-            case 1266: // timetz
+            case TIMETZ:
                 static if (isConvertible!(T, SysTime))
                     return _to!T(readTimeTz);
                 else
                     throw convError!T();
-            case 2249: // record and other composite types
+            case RECORD: // record and other composite types
                 static if (isVariantN!T && T.allowed!(Variant[]))
                     return T(readComposite!(Variant[]));
                 else
                     return readComposite!T;
-            case 2287: // _record and other arrays
+            case _RECORD: // _record and other arrays
                 static if (isArray!T && !isSomeString!T)
                     return readArray!T;
                 else static if (isVariantN!T && T.allowed!(Variant[]))
                     return T(readArray!(Variant[]));
                 else
                     throw convError!T();
-            case 114: //JSON
+            case JSON:
                 static if (isConvertible!(T, string))
                     return _to!T(readString(len));
                 else
                     throw convError!T();
             default:
                 if (oid in conn.arrayTypes)
-                    goto case 2287;
+                    goto case _RECORD;
                 else if (oid in conn.compositeTypes)
-                    goto case 2249;
+                    goto case RECORD;
                 else if (oid in conn.enumTypes)
                 {
                     static if (is(T == enum))

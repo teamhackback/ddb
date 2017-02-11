@@ -154,36 +154,37 @@ class PGConnection
                     }
                 }
 
+                with (PGType)
                 /*final*/ switch (param.type)
                 {
-                    case PGType.BOOLEAN:
+                    case BOOLEAN:
                         checkParam!bool(1);
                         break;
-                    case PGType.INT2: checkParam!short(2); break;
-                    case PGType.INT4: checkParam!int(4); break;
-                    case PGType.INT8: checkParam!long(8); break;
-                    case PGType.FLOAT8: checkParam!double(8); break;
+                    case INT2: checkParam!short(2); break;
+                    case INT4: checkParam!int(4); break;
+                    case INT8: checkParam!long(8); break;
+                    case FLOAT8: checkParam!double(8); break;
 
-                    //case PGType.BOOLEAN:
-                    //case PGType.TIMESTAMP:
-                    case PGType.INET:
-                    case PGType.NUMERIC:
-                    case PGType.JSONB:
-                    case PGType.INTERVAL:
-                    case PGType.VARCHAR:
-                    case PGType.TEXT:
+                    //case BOOLEAN:
+                    //case TIMESTAMP:
+                    case INET:
+                    case NUMERIC:
+                    case JSONB:
+                    case INTERVAL:
+                    case VARCHAR:
+                    case TEXT:
                         paramsLen += param.value.coerce!string.length;
                         hasText = true;
                         break;
-                    case PGType.BYTEA:
+                    case BYTEA:
                         paramsLen += param.value.length;
                         break;
-                    case PGType.JSON:
+                    case JSON:
                         paramsLen += param.value.coerce!string.length; // TODO: object serialisation
                         break;
-                    case PGType.DATE:
+                    case DATE:
                         paramsLen += 4; break;
-                    case PGType.TIMESTAMP:
+                    case TIMESTAMP:
                         paramsLen += 16; break;
                     default:
                         assert(0, param.type.to!string ~ " Not implemented");
@@ -202,16 +203,17 @@ class PGConnection
                 stream.write(cast(short) params.length);
                 foreach(param; params)
                 {
+                    with (PGType)
                     switch (param.type)
                     {
-                        case PGType.BOOLEAN:
-                        case PGType.TIMESTAMP:
-                        case PGType.INET:
-                        case PGType.NUMERIC:
-                        case PGType.JSONB:
-                        case PGType.INTERVAL:
-                        case PGType.VARCHAR:
-                        case PGType.TEXT:
+                        case BOOLEAN:
+                        case TIMESTAMP:
+                        case INET:
+                        case NUMERIC:
+                        case JSONB:
+                        case INTERVAL:
+                        case VARCHAR:
+                        case TEXT:
                             stream.write(cast(short) 0); // text format
                             break;
                         default:
@@ -232,42 +234,43 @@ class PGConnection
                     continue;
                 }
 
+                with (PGType)
                 switch (param.type)
                 {
-                    case PGType.BOOLEAN:
+                    case BOOLEAN:
                         stream.write(cast(bool) 1);
                         stream.write(param.value.get!bool);
                         break;
-                    case PGType.INT2:
+                    case INT2:
                         stream.write(cast(int)2);
                         stream.write(param.value.get!short);
                         break;
-                    case PGType.INT4:
+                    case INT4:
                         stream.write(cast(int)4);
                         stream.write(param.value.get!int);
                         break;
-                    case PGType.INT8:
+                    case INT8:
                         stream.write(cast(int)8);
                         stream.write(param.value.get!long);
                         break;
-                     case PGType.FLOAT8:
+                     case FLOAT8:
                         stream.write(cast(int)8);
                         stream.write(param.value.get!double);
                         break;
 
-                    //case PGType.BOOLEAN:
-                    //case PGType.TIMESTAMP:
-                    case PGType.INET:
-                    case PGType.NUMERIC:
-                    case PGType.JSONB:
-                    case PGType.INTERVAL:
-                    case PGType.VARCHAR:
-                    case PGType.TEXT:
+                    //case BOOLEAN:
+                    //case TIMESTAMP:
+                    case INET:
+                    case NUMERIC:
+                    case JSONB:
+                    case INTERVAL:
+                    case VARCHAR:
+                    case TEXT:
                         auto s = param.value.coerce!string;
                         stream.write(cast(int) s.length);
                         stream.write(cast(ubyte[]) s);
                         break;
-                    case PGType.BYTEA:
+                    case BYTEA:
                         auto s = param.value;
                         stream.write(cast(int) s.length);
 
@@ -278,16 +281,16 @@ class PGConnection
                         }
                         stream.write(x);
                         break;
-                    case PGType.JSON:
+                    case JSON:
                         auto s = param.value.coerce!string;
                         stream.write(cast(int) s.length);
                         stream.write(cast(ubyte[]) s);
                         break;
-                    case PGType.DATE:
+                    case DATE:
                         stream.write(cast(int) 4);
                         stream.write(Date.fromISOString(param.value.coerce!string));
                         break;
-                   case PGType.TIMESTAMP:
+                   case TIMESTAMP:
                         stream.write(cast(int) 8);
                         auto t = cast(DateTime) Clock.currTime(UTC());
                         stream.write(t);
