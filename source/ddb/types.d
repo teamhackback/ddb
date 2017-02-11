@@ -7,7 +7,11 @@ const PGEpochDay = PGEpochDate.dayOfGregorianCal;
 const PGEpochTime = TimeOfDay(0, 0, 0);
 const PGEpochDateTime = DateTime(2000, 1, 1, 0, 0, 0);
 
-enum TransactionStatus : char { OutsideTransaction = 'I', InsideTransaction = 'T', InsideFailedTransaction = 'E' };
+enum TransactionStatus : char {
+    OutsideTransaction = 'I', // idle
+    InsideTransaction = 'T', // transaction
+    InsideFailedTransaction = 'E' // error (transaction recovery)
+};
 
 enum string[int] baseTypes = [
     // boolean types
@@ -37,6 +41,7 @@ Reference:
  - https://github.com/postgres/postgres/blob/master/src/include/catalog/pg_type.h
  - https://github.com/brianc/node-pg-types/blob/master/lib/textParsers.js
  - https://github.com/lpsmith/postgresql-simple/blob/master/src/Database/PostgreSQL/Simple/TypeInfo/Static.hs#L74
+ - https://github.com/zadarnowski/postgresql-wire-protocol/blob/master/src/Database/PostgreSQL/Protocol/ObjectIDs.lhs
 */
 enum PGType : int
 {
@@ -259,6 +264,8 @@ struct Circle {
 }
 
 alias PGMoney = long;
+
+// TODO:
 alias PGBigInt = long;
 alias PGFloat8 = double;
 alias PGFloat4 = float;

@@ -98,8 +98,8 @@ class PGConnection
                 stream.writeCString(key);
                 stream.writeCString(value);
             }
-        stream.write(cast(ubyte)0);
-    }
+            stream.write(cast(ubyte)-1);
+        }
 
         void sendPasswordMessage(string password)
         {
@@ -255,9 +255,33 @@ class PGConnection
                         stream.write(cast(int)8);
                         stream.write(param.value.get!long);
                         break;
-                     case FLOAT8:
+                    case FLOAT8:
                         stream.write(cast(int)8);
                         stream.write(param.value.get!double);
+                        break;
+
+                    case POINT:
+                        stream.write(cast(int)16);
+                        auto p = param.value.get!Point;
+                        stream.write(p.x);
+                        stream.write(p.y);
+                        break;
+
+                    case LINE, CIRCLE:
+                        stream.write(cast(int)24);
+                        auto p = param.value.get!Circle;
+                        stream.write(p.x);
+                        stream.write(p.y);
+                        stream.write(p.r);
+                        break;
+
+                    case LSEG, BOX:
+                        stream.write(cast(int)32);
+                        auto p = param.value.get!Box;
+                        stream.write(p.x1);
+                        stream.write(p.y1);
+                        stream.write(p.x2);
+                        stream.write(p.y2);
                         break;
 
                     //case BOOLEAN:
@@ -365,11 +389,11 @@ class PGConnection
 
             sendFlushMessage();
 
-    receive:
+        receive:
 
             Message msg = getMessage();
 
-        switch (msg.type)
+            switch (msg.type)
             {
                 case 'E':
                     // ErrorResponse
@@ -381,6 +405,7 @@ class PGConnection
                     return;
                 default:
                     // async notice, notification
+                    handleAsync(msg);
                     goto receive;
             }
         }
@@ -406,6 +431,7 @@ class PGConnection
                     return;
                 default:
                     // async notice, notification
+                    handleAsync(msg);
                     goto receive;
             }
         }
@@ -460,16 +486,13 @@ class PGConnection
 
                         fields[i] = fi;
                     }
-
-                    import std.stdio;
-                    writeln("fields", fields);
-
                     return () @trusted { return cast(PGFields)fields; }();
                 case 'n':
                     // NoData (response to Describe)
                     return new immutable(PGField)[0];
                 default:
                     // async notice, notification
+                    handleAsync(msg);
                     goto receive;
             }
         }
@@ -534,6 +557,7 @@ class PGConnection
                     return rowsAffected;
                 default:
                     // async notice, notification
+                    handleAsync(msg);
                     goto receive;
             }
         }
@@ -588,8 +612,6 @@ class PGConnection
                         row.setNull(i);
                     else
                     {
-                        import std.stdio;
-                        writeln(fields[i]);
                         () @trusted { row[i] = msg.readBaseType!(Row.ElemType)(fields[i].oid, fieldLen); }();
                     }
                 }
@@ -606,7 +628,8 @@ class PGConnection
             {
                 msg = getMessage();
 
-                // TODO: process async notifications
+                // async notice, notification
+                handleAsync(msg);
             }
             while (msg.type != 'Z'); // ReadyForQuery
         }
@@ -671,10 +694,24 @@ class PGConnection
                     throw new ServerErrorException(response);
                 default:
                     // async notice, notification
+                    handleAsync(msg);
                     goto receive;
             }
 
             assert(0);
+        }
+
+        void handleAsync(scope const ref Message msg)
+        {
+            import std.stdio;
+            writeln("msg %s: %s", msg.type, msg.data);
+            switch (msg.type)
+            {
+                case 'A':
+                    writeln("[Async] Notification");
+                default:
+                    writeln("[Async] Unknonw Notification");
+            }
         }
 
     public:
@@ -826,6 +863,7 @@ class PGConnection
                     return;
                 default:
                     // unknown message type, ignore it
+                    handleAsync(msg);
                     goto receive;
             }
         }

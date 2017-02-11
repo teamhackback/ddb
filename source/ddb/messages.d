@@ -349,9 +349,6 @@ struct Message
             ";
         }
 
-        import std.stdio;
-        writefln("readBaseType oid: %s", oid);
-
         with (PGType)
         switch (oid)
         {
