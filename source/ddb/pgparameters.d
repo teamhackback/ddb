@@ -88,6 +88,16 @@ class PGParameters
         return params[index] = new PGParameter(this, index, type);
     }
 
+    PGParameters bind(T)(short index, PGType type, T value)
+    {
+        enforce(!cmd.prepared, "Can't add parameter to prepared statement.");
+        changed = true;
+        params[index] = new PGParameter(this, index, type);
+        params[index].value = value;
+        return this;
+    }
+
+
     // todo: remove()
 
     PGParameter opIndex(short index)

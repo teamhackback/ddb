@@ -163,6 +163,13 @@ class PGConnection
                     case PGType.INT4: checkParam!int(4); break;
                     case PGType.INT8: checkParam!long(8); break;
                     case PGType.FLOAT8: checkParam!double(8); break;
+
+                    //case PGType.BOOLEAN:
+                    //case PGType.TIMESTAMP:
+                    case PGType.INET:
+                    case PGType.NUMERIC:
+                    case PGType.JSONB:
+                    case PGType.INTERVAL:
                     case PGType.VARCHAR:
                     case PGType.TEXT:
                         paramsLen += param.value.coerce!string.length;
@@ -194,10 +201,23 @@ class PGConnection
             {
                 stream.write(cast(short) params.length);
                 foreach(param; params)
-                    if(param.type == PGType.TEXT)
-                        stream.write(cast(short) 0); // text format
-                    else
-                        stream.write(cast(short) 1); // binary format
+                {
+                    switch (param.type)
+                    {
+                        case PGType.BOOLEAN:
+                        case PGType.TIMESTAMP:
+                        case PGType.INET:
+                        case PGType.NUMERIC:
+                        case PGType.JSONB:
+                        case PGType.INTERVAL:
+                        case PGType.VARCHAR:
+                        case PGType.TEXT:
+                            stream.write(cast(short) 0); // text format
+                            break;
+                        default:
+                            stream.write(cast(short) 1); // binary format
+                    }
+            }
             } else {
                 stream.write(cast(short)1); // one parameter format code
                 stream.write(cast(short)1); // binary format
@@ -216,24 +236,31 @@ class PGConnection
                 {
                     case PGType.BOOLEAN:
                         stream.write(cast(bool) 1);
-                        stream.write(param.value.coerce!bool);
+                        stream.write(param.value.get!bool);
                         break;
                     case PGType.INT2:
                         stream.write(cast(int)2);
-                        stream.write(param.value.coerce!short);
+                        stream.write(param.value.get!short);
                         break;
                     case PGType.INT4:
                         stream.write(cast(int)4);
-                        stream.write(param.value.coerce!int);
+                        stream.write(param.value.get!int);
                         break;
                     case PGType.INT8:
                         stream.write(cast(int)8);
-                        stream.write(param.value.coerce!long);
+                        stream.write(param.value.get!long);
                         break;
                      case PGType.FLOAT8:
                         stream.write(cast(int)8);
-                        stream.write(param.value.coerce!double);
+                        stream.write(param.value.get!double);
                         break;
+
+                    //case PGType.BOOLEAN:
+                    //case PGType.TIMESTAMP:
+                    case PGType.INET:
+                    case PGType.NUMERIC:
+                    case PGType.JSONB:
+                    case PGType.INTERVAL:
                     case PGType.VARCHAR:
                     case PGType.TEXT:
                         auto s = param.value.coerce!string;
@@ -832,7 +859,7 @@ class PGConnection
         {
             auto cmd = new PGCommand(this, "SELECT oid, typelem FROM pg_type WHERE typcategory = 'A'");
             auto result = cmd.executeQuery!(uint, "arrayOid", uint, "elemOid");
-            scope(exit) result.close;
+            scope(exit) result.destroy;
 
             arrayTypes = null;
 
@@ -849,7 +876,7 @@ class PGConnection
             auto cmd = new PGCommand(this, "SELECT a.attrelid, a.atttypid FROM pg_attribute a JOIN pg_type t ON
                                      a.attrelid = t.typrelid WHERE a.attnum > 0 ORDER BY a.attrelid, a.attnum");
             auto result = cmd.executeQuery!(uint, "typeOid", uint, "memberOid");
-            scope(exit) result.close;
+            scope(exit) result.destroy;
 
             compositeTypes = null;
 
@@ -874,7 +901,7 @@ class PGConnection
         {
             auto cmd = new PGCommand(this, "SELECT enumtypid, oid, enumlabel FROM pg_enum ORDER BY enumtypid, oid");
             auto result = cmd.executeQuery!(uint, "typeOid", uint, "valueOid", string, "valueLabel");
-            scope(exit) result.close;
+            scope(exit) result.destroy;
 
             enumTypes = null;
 

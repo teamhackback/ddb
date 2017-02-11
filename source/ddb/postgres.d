@@ -76,18 +76,10 @@ with vibe.d use -version=Have_vibe_d_core and use a ConnectionPool (PostgresDB O
 
     auto cmd = new PGCommand(conn, "SELECT typname, typlen FROM pg_type");
     auto result = cmd.executeQuery;
+    scope(exit) result.destroy;
 
-    try
-    {
-        foreach (row; result)
-        {
-            writeln(row["typname"], ", ", row[1]);
-        }
-    }
-    finally
-    {
-        result.close;
-    }
+    foreach (row; result)
+        writeln(row["typname"], ", ", row[1]);
 
 ---
 without vibe.d you can use std sockets with PGConnection object
@@ -109,18 +101,10 @@ int main(string[] argv)
 
     auto cmd = new PGCommand(conn, "SELECT typname, typlen FROM pg_type");
     auto result = cmd.executeQuery;
+    scope(exit) result.destroy;
 
-    try
-    {
-        foreach (row; result)
-        {
-            writeln(row[0], ", ", row[1]);
-        }
-    }
-    finally
-    {
-        result.close;
-    }
+    foreach (row; result)
+        writeln(row[0], ", ", row[1]);
 
     return 0;
 }

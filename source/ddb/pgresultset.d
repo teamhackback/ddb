@@ -9,8 +9,8 @@ import ddb.types : PGFields;
 /// Input range of DBRow!Specs
 class PGResultSet(Specs...)
 {
-    alias DBRow!Specs Row;
-    alias Row delegate(ref Message msg, ref PGFields fields) FetchRowDelegate;
+    alias Row = DBRow!Specs;
+    alias FetchRowDelegate = Row delegate(ref Message msg, ref PGFields fields);
 
     private FetchRowDelegate fetchRow;
     private PGConnection conn;
@@ -38,6 +38,12 @@ class PGResultSet(Specs...)
             else
                 columnMap[field.name] = [i];
         }
+    }
+
+    ~this()
+    {
+        if (conn && conn.activeResultSet)
+            close();
     }
 
     private size_t columnToIndex(string column, size_t index)

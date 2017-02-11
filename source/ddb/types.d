@@ -26,7 +26,8 @@ enum string[int] baseTypes = [
     20 : "int8",
     700 : "float4",
     701 : "float8",
-    1700 : "numeric"
+    1114: "timestamp",
+    1700 : "numeric",
 ];
 
 public:
@@ -45,8 +46,15 @@ enum PGType : int
     INT2 = 21,
     INT4 = 23,
     INT8 = 20,
+
+    JSON = 114,
+    JSONARRAY = 199,
+
+    NUMERIC = 1700,
     FLOAT4 = 700,
     FLOAT8 = 701,
+
+    INET = 869,
 
     // reference https://github.com/lpsmith/postgresql-simple/blob/master/src/Database/PostgreSQL/Simple/TypeInfo/Static.hs#L74
     DATE = 1082,
@@ -56,8 +64,7 @@ enum PGType : int
     INTERVAL = 1186,
     TIMETZ = 1266,
 
-    JSON = 114,
-    JSONARRAY = 199
+    JSONB = 3802,
 };
 
 /// Array of fields returned by the server
