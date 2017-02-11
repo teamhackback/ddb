@@ -170,5 +170,3 @@ class PGStream
         write(cast(int)0);
     }
 }
-
-

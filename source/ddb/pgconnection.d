@@ -54,8 +54,10 @@ class PGConnection
         uint[uint] arrayTypes;
         uint[][uint] compositeTypes;
         string[uint][uint] enumTypes;
-        bool activeResultSet;
+        bool activeResultSet; // there can only be one active result set at a time
 
+        // prepared statement are saved on the server with an unique id
+        // (for the current connection)
         string reservePrepared()
         {
             synchronized (this)
@@ -161,58 +163,8 @@ class PGConnection
 
         void sendBindMessage(string portalName, string statementName, PGParameters params) @trusted
         {
-            int paramsLen = 0;
             bool hasText = false;
-
-            foreach (param; params)
-            {
-                enforce(param.value.hasValue, new ParamException("Parameter $" ~ to!string(param.index) ~ " value is not initialized"));
-
-                void checkParam(T)(int len)
-                {
-                    if (param.value != null)
-                    {
-                        enforce(param.value.convertsTo!T, new ParamException("Parameter's value is not convertible to " ~ T.stringof));
-                        paramsLen += len;
-                    }
-                }
-
-                with (PGType)
-                /*final*/ switch (param.type)
-                {
-                    case BOOLEAN:
-                        checkParam!bool(1);
-                        break;
-                    case INT2: checkParam!short(2); break;
-                    case INT4: checkParam!int(4); break;
-                    case INT8: checkParam!long(8); break;
-                    case FLOAT8: checkParam!double(8); break;
-
-                    //case BOOLEAN:
-                    //case TIMESTAMP:
-                    case INET:
-                    case NUMERIC:
-                    case JSONB:
-                    case INTERVAL:
-                    case VARCHAR:
-                    case TEXT:
-                        paramsLen += param.value.coerce!string.length;
-                        hasText = true;
-                        break;
-                    case BYTEA:
-                        paramsLen += param.value.length;
-                        break;
-                    case JSON:
-                        paramsLen += param.value.coerce!string.length; // TODO: object serialisation
-                        break;
-                    case DATE:
-                        paramsLen += 4; break;
-                    case TIMESTAMP:
-                        paramsLen += 16; break;
-                    default:
-                        assert(0, param.type.to!string ~ " Not implemented");
-                }
-            }
+            int paramsLen = params.calcLen(hasText);
 
             int len = cast(int)( 4 + portalName.length + 1 + statementName.length + 1 + (hasText ? (params.length*2) : 2) + 2 + 2 +
                 params.length * 4 + paramsLen + 2 + 2 );
@@ -249,103 +201,7 @@ class PGConnection
             }
             stream.write(cast(short)params.length);
 
-            foreach (param; params)
-            {
-                if (param.value == null)
-                {
-                    stream.write(-1);
-                    continue;
-                }
-
-                with (PGType)
-                switch (param.type)
-                {
-                    case BOOLEAN:
-                        stream.write(cast(bool) 1);
-                        stream.write(param.value.get!bool);
-                        break;
-                    case INT2:
-                        stream.write(cast(int)2);
-                        stream.write(param.value.get!short);
-                        break;
-                    case INT4:
-                        stream.write(cast(int)4);
-                        stream.write(param.value.get!int);
-                        break;
-                    case INT8:
-                        stream.write(cast(int)8);
-                        stream.write(param.value.get!long);
-                        break;
-                    case FLOAT8:
-                        stream.write(cast(int)8);
-                        stream.write(param.value.get!double);
-                        break;
-
-                    case POINT:
-                        stream.write(cast(int)16);
-                        auto p = param.value.get!Point;
-                        stream.write(p.x);
-                        stream.write(p.y);
-                        break;
-
-                    case LINE, CIRCLE:
-                        stream.write(cast(int)24);
-                        auto p = param.value.get!Circle;
-                        stream.write(p.x);
-                        stream.write(p.y);
-                        stream.write(p.r);
-                        break;
-
-                    case LSEG, BOX:
-                        stream.write(cast(int)32);
-                        auto p = param.value.get!Box;
-                        stream.write(p.x1);
-                        stream.write(p.y1);
-                        stream.write(p.x2);
-                        stream.write(p.y2);
-                        break;
-
-                    //case BOOLEAN:
-                    //case TIMESTAMP:
-                    case INET:
-                    case NUMERIC:
-                    case JSONB:
-                    case INTERVAL:
-                    case VARCHAR:
-                    case TEXT:
-                        auto s = param.value.coerce!string;
-                        stream.write(cast(int) s.length);
-                        stream.write(cast(ubyte[]) s);
-                        break;
-                    case BYTEA:
-                        auto s = param.value;
-                        stream.write(cast(int) s.length);
-
-                        ubyte[] x;
-                        x.length = s.length;
-                        for (int i = 0; i < x.length; i++) {
-                            x[i] = s[i].get!(ubyte);
-                        }
-                        stream.write(x);
-                        break;
-                    case JSON:
-                        auto s = param.value.coerce!string;
-                        stream.write(cast(int) s.length);
-                        stream.write(cast(ubyte[]) s);
-                        break;
-                    case DATE:
-                        stream.write(cast(int) 4);
-                        stream.write(Date.fromISOString(param.value.coerce!string));
-                        break;
-                   case TIMESTAMP:
-                        stream.write(cast(int) 8);
-                        auto t = cast(DateTime) Clock.currTime(UTC());
-                        stream.write(t);
-                        break;
-                    default:
-                        assert(0, param.type.to!string ~ " Not implemented");
-                }
-            }
+            params.writeParams(stream);
 
             stream.write(cast(short)1); // one result format code
             stream.write(cast(short)1); // binary format
