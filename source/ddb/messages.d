@@ -19,13 +19,58 @@ import ddb.utils;
 
 @safe:
 
+enum ResponseMessageTypes : char {
+    RowDescription = 'T',
+    DataRow = 'D',
+    CommandComplete = 'C',
+    EmptyQueryResponse = 'I',
+    PortalSuspended = 's',
+    ReadyForQuery = 'Z',
+    ErrorResponse = 'E',
+    BackendKeyData = 'K',
+    ParameterStatus = 'S',
+    AuthenticationXXXX = 'R',
+    NoticeResponse = 'N',
+    ParseComplete = '1',
+    BindComplete = '2',
+    CloseComplete = '3',
+    NoData = 'n',
+    NotificationResponse = 'A',
+
+    // TODO:
+    FunctionCallResponse = 'V',
+    ParameterDescription = 't',
+    CopyDone = 'd',
+    CopyFail = 'f',
+    CopyInResponse = 'G',
+    CopyOutResponse = 'H',
+    CopyBothResponse = 'W',
+}
+
+enum RequestMessageTypes : char {
+    Parse = 'P',
+    Password = 'p',
+    Close = 'C',
+    Terminate = 'X',
+    Bind = 'B',
+    Describe = 'D',
+    Execute = 'E',
+    Flush = 'H',
+    Sync = 'S',
+    Query = 'Q',
+    // TODO:
+    FunctionCall = 'F',
+    CopyData = 'd',
+}
+
 struct Message
 {
     PGConnection conn;
-    char type;
+    char type; // ResponseMessageTypes
     ubyte[] data;
 
-    private size_t position = 0;
+    //private size_t position = 0;
+    size_t position = 0;
 
     T read(T, Params...)(Params p)
     {
@@ -46,6 +91,22 @@ struct Message
         buf[] = data[position..position+Int.sizeof];
         x = bigEndianToNative!Int(buf);
         position += Int.sizeof;
+    }
+
+    // deserializes text representation
+    T parse(T)(int len)
+    {
+        static if (is(T == bool))
+        {
+            return read!bool;
+        }
+        else
+        {
+            import ddb.formats : parseImpl;
+            T x;
+            parseImpl(x, readString(len));
+            return x;
+        }
     }
 
     string readCString()
@@ -161,7 +222,7 @@ struct Message
         return SysTime(DateTime(Date(0, 1, 1), time), stz);
     }
 
-    T readComposite(T)()
+    T readComposite(T)(bool binaryMode)
     {
         alias Record = DBRow!T;
 
@@ -181,7 +242,7 @@ struct Message
                     s ~= text("record.setNull!(", i, ");\n");
                     s ~= "else\n";
                     s ~= text("record.set!(fieldTypes[", i, "], ", i, ")(",
-                              "readBaseType!(fieldTypes[", i, "])(fieldOid, fieldLen)",
+                              "readBaseType!(fieldTypes[", i, "])(fieldOid, binaryMode, fieldLen)",
                               ");\n");
                     // text() doesn't work with -inline option, CTFE bug
                 }
@@ -211,7 +272,7 @@ struct Message
                 if (fieldLen == -1)
                     record.setNull(i);
                 else
-                    () @trusted { record[i] = readBaseType!(Record.ElemType)(fieldOid, fieldLen); }();
+                    () @trusted { record[i] = readBaseType!(Record.ElemType)(fieldOid, binaryMode, fieldLen); }();
             }
         }
 
@@ -221,7 +282,7 @@ struct Message
     {
         alias U ElemType;
     }
-    private AT readDimension(AT)(int[] lengths, uint elementOid, int dim)
+    private AT readDimension(AT)(int[] lengths, uint elementOid, int dim, bool binaryMode)
     {
 
         mixin elmnt!AT;
@@ -237,7 +298,7 @@ struct Message
         foreach(i; 0 .. length)
         {
             static if (isArray!ElemType && !isSomeString!ElemType)
-                array[i] = readDimension!ElemType(lengths, elementOid, dim + 1);
+                array[i] = readDimension!ElemType(lengths, elementOid, dim + 1, binaryMode);
             else
             {
                 static if (isNullable!ElemType)
@@ -254,14 +315,14 @@ struct Message
                         throw new Exception("Can't set NULL value to non nullable type");
                 }
                 else
-                    () @trusted { array[i] = readBaseType!E(elementOid, fieldLen); }();
+                    () @trusted { array[i] = readBaseType!E(elementOid, binaryMode, fieldLen); }();
             }
         }
 
         return array;
     }
 
-    T readArray(T)()
+    T readArray(T)(bool binaryMode)
         if (isArray!T)
     {
         alias multiArrayElemType!T U;
@@ -297,7 +358,7 @@ struct Message
             elementCount *= len;
         }
 
-        T array = readDimension!T(lengths, elementOid, 0);
+        T array = readDimension!T(lengths, elementOid, 0, binaryMode);
 
         return array;
     }
@@ -325,7 +386,7 @@ struct Message
         }
     }
 
-    T readBaseType(T)(uint oid, int len = 0)
+    T readBaseType(T)(uint oid, bool binaryMode, int len = 0)
     {
         auto convError(T)()
         {
@@ -335,17 +396,22 @@ struct Message
 
         // for a PGType generate label and its corresponding array label parsing
         template genLabels(string pgtype, string dtype) {
+            // read: binary data
+            // parse: plaintext data
             enum genLabels = "
-               case " ~ pgtype ~ ":
-                   static if (isConvertible!(T, " ~ dtype ~"))
-                       return _to!T(read!(" ~ dtype ~ "));
-                   else
-                       throw convError!T();
-               case _" ~ pgtype ~ ":
-                   static if (isConvertible!(T, " ~ dtype ~ "[]))
-                       return _to!T(readArray!(" ~ dtype ~ "[]));
-                   else
-                       throw convError!T();
+                case " ~ pgtype ~ ":
+                    static if (isConvertible!(T, " ~ dtype ~"))
+                        if (binaryMode)
+                            return _to!T(read!(" ~ dtype ~ "));
+                        else
+                            return _to!T(parse!(" ~ dtype ~ ")(len));
+                    else
+                        throw convError!T();
+                case _" ~ pgtype ~ ":
+                    static if (isConvertible!(T, " ~ dtype ~ "[]))
+                        return _to!T(readArray!(" ~ dtype ~ "[])(binaryMode));
+                    else
+                        throw convError!T();
             ";
         }
 
@@ -359,7 +425,7 @@ struct Message
             mixin(genLabels!("INT8", "long"));
             mixin(genLabels!("FLOAT4", "float"));
             mixin(genLabels!("FLOAT8", "double"));
-            mixin(genLabels!("UUID", "std.uuid.UUID"));
+            //mixin(genLabels!("UUID", "std.uuid.UUID"));
             mixin(genLabels!("CHAR", "char"));
             mixin(genLabels!("DATE", "Date"));
             mixin(genLabels!("TIME", "TimeOfDay"));
@@ -367,6 +433,7 @@ struct Message
             mixin(genLabels!("TIMESTAMPTZ", "SysTime"));
             mixin(genLabels!("INTERVAL", "core.time.Duration"));
             mixin(genLabels!("TIMETZ", "SysTime"));
+            /**
             mixin(genLabels!("POINT", "Point"));
             mixin(genLabels!("LSEG", "LSeg"));
             //mixin(genLabels!("PATH", "Path"));
@@ -374,6 +441,7 @@ struct Message
             //mixin(genLabels!("POLYGON", "Polygon"));
             mixin(genLabels!("LINE", "Line"));
             mixin(genLabels!("CIRCLE", "Circle"));
+            */
 
             // oid and reg*** aliases
             case OID, REGPROC, REGPROCEDURE, REGOPER, REGOPERATOR,
@@ -382,7 +450,7 @@ struct Message
                     return _to!T(read!uint);
                 else
                     throw convError!T();
-            case BPCHAR, VARCHAR, TEXT, NAME, UNKNOWN: // bpchar, varchar, text, name, unknown
+            case BPCHAR, VARCHAR, TEXT, NAME, UNKNOWN:
                 static if (isConvertible!(T, string))
                     return _to!T(readString(len));
                 else
@@ -394,14 +462,14 @@ struct Message
                     throw convError!T();
             case RECORD: // record and other composite types
                 static if (isVariantN!T && T.allowed!(Variant[]))
-                    return () @trusted { return T(readComposite!(Variant[])); }();
+                    return () @trusted { return T(readComposite!(Variant[])(binaryMode)); }();
                 else
-                    return readComposite!T;
+                    return readComposite!T(binaryMode);
             case _RECORD: // _record and other arrays
                 static if (isArray!T && !isSomeString!T)
-                    return readArray!T;
+                    return readArray!T(binaryMode);
                 else static if (isVariantN!T && T.allowed!(Variant[]))
-                    return () @trusted { return T(readArray!(Variant[])); }();
+                    return () @trusted { return T(readArray!(Variant[])(binaryMode)); }();
                 else
                     throw convError!T();
             case JSON:
@@ -567,5 +635,95 @@ class ResponseMessage
             s ~= "\nHINT: " ~ *hint;
 
         return s;
+    }
+}
+
+PGFields parseRowDescription(scope ref Message msg)
+{
+    PGField[] fields;
+    short fieldCount;
+    short formatCode;
+    PGField fi;
+
+    msg.read(fieldCount);
+
+    fields.length = fieldCount;
+
+    foreach (i; 0..fieldCount)
+    {
+        msg.readCString(fi.name);
+        msg.read(fi.tableOid);
+        msg.read(fi.index);
+        msg.read(fi.oid);
+        msg.read(fi.typlen);
+        msg.read(fi.modifier);
+        msg.read(formatCode);
+
+        enforce(formatCode == 0 || formatCode == 1,
+            new Exception("Field's format code returned in RowDescription is not 0 (text) or 1 (binary)"));
+
+        fi.binaryMode = cast(bool) formatCode;
+
+        fields[i] = fi;
+    }
+    return () @trusted { return cast(PGFields)fields; }();
+}
+
+import ddb.pgresultset : PGResultSet;
+
+PGResultSet!Specs parseDataRow(Specs...)(scope ref Message msg, PGResultSet!Specs result,
+                                   scope ref PGFields fields, PGConnection conn)
+{
+    alias Row = DBRow!Specs;
+    result.row = conn.fetchRow!Specs(msg, fields);
+    static if (!Row.hasStaticLength)
+        result.row.columnToIndex = &result.columnToIndex;
+    result.validRow = true;
+    result.nextMsg = conn.getMessage();
+
+    conn.activeResultSet = true;
+    return result;
+}
+
+void parseReadyForQuery(scope ref Message msg, PGConnection conn)
+@trusted
+{
+    enforce(msg.data.length == 1);
+    msg.read(cast(char)conn.trStatus);
+
+    // check for validity
+    with (TransactionStatus)
+    switch (conn.trStatus)
+    {
+        case OutsideTransaction, InsideTransaction, InsideFailedTransaction: break;
+        default: throw new Exception("Invalid transaction status: " ~ conn.trStatus);
+    }
+}
+
+void parseCommandCompletion(scope ref Message msg, PGConnection conn, out uint oid, ref ulong rowsAffected)
+{
+    import std.string : indexOf, lastIndexOf;
+
+    string tag;
+    msg.readCString(tag);
+
+    auto s1 = indexOf(tag, ' ');
+    if (s1 >= 0) {
+        switch (tag[0 .. s1]) {
+            case "INSERT":
+                // INSERT oid rows
+                auto s2 = lastIndexOf(tag, ' ');
+                assert(s2 > s1);
+                oid = to!uint(tag[s1 + 1 .. s2]);
+                rowsAffected = to!ulong(tag[s2 + 1 .. $]);
+                break;
+            case "DELETE", "UPDATE", "MOVE", "FETCH":
+                // DELETE rows
+                rowsAffected = to!ulong(tag[s1 + 1 .. $]);
+                break;
+            default:
+                // CREATE TABLE
+                break;
+         }
     }
 }

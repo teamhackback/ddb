@@ -4,11 +4,11 @@ import std.bitmanip : bigEndianToNative;
 import std.conv : text, to;
 import std.exception : enforce;
 import std.datetime : Clock, Date, DateTime, UTC;
-import std.string;
+import std.string : indexOf, lastIndexOf;
 
 import ddb.db : DBRow;
 import ddb.exceptions;
-import ddb.messages : Message, ResponseMessage;
+import ddb.messages : Message, parseCommandCompletion, parseDataRow, parseReadyForQuery, parseRowDescription, RequestMessageTypes, ResponseMessage, ResponseMessageTypes;
 import ddb.pgcommand : PGCommand;
 import ddb.pgparameters : PGParameter, PGParameters;
 import ddb.pgresultset : PGResultSet;
@@ -33,6 +33,11 @@ else
 }
 
 @safe:
+
+/*
+Reference:
+- https://www.postgresql.org/docs/9.6/static/protocol-message-formats.html
+*/
 
 /**
 Class representing connection to PostgreSQL server.
@@ -121,7 +126,7 @@ class PGConnection
         {
             int len = cast(int)(4 + password.length + 1);
 
-            stream.write('p');
+            stream.write(RequestMessageTypes.Password);
             stream.write(len);
             stream.writeCString(password);
         }
@@ -130,7 +135,7 @@ class PGConnection
         {
             int len = cast(int)(4 + statementName.length + 1 + query.length + 1 + 2 + oids.length * 4);
 
-            stream.write('P');
+            stream.write(RequestMessageTypes.Parse);
             stream.write(len);
             stream.writeCString(statementName);
             stream.writeCString(query);
@@ -142,7 +147,7 @@ class PGConnection
 
         void sendCloseMessage(DescribeType type, string name)
         {
-            stream.write('C');
+            stream.write(RequestMessageTypes.Close);
             stream.write(cast(int)(4 + 1 + name.length + 1));
             stream.write(cast(char)type);
             stream.writeCString(name);
@@ -150,7 +155,7 @@ class PGConnection
 
         void sendTerminateMessage()
         {
-            stream.write('X');
+            stream.write(RequestMessageTypes.Terminate);
             stream.write(cast(int)4);
         }
 
@@ -212,7 +217,7 @@ class PGConnection
             int len = cast(int)( 4 + portalName.length + 1 + statementName.length + 1 + (hasText ? (params.length*2) : 2) + 2 + 2 +
                 params.length * 4 + paramsLen + 2 + 2 );
 
-            stream.write('B');
+            stream.write(RequestMessageTypes.Bind);
             stream.write(len);
             stream.writeCString(portalName);
             stream.writeCString(statementName);
@@ -350,7 +355,7 @@ class PGConnection
 
         void sendDescribeMessage(DescribeType type, string name)
         {
-            stream.write('D');
+            stream.write(RequestMessageTypes.Describe);
             stream.write(cast(int)(4 + 1 + name.length + 1));
             stream.write(cast(char)type);
             stream.writeCString(name);
@@ -358,7 +363,7 @@ class PGConnection
 
         void sendExecuteMessage(string portalName, int maxRows)
         {
-            stream.write('E');
+            stream.write(RequestMessageTypes.Execute);
             stream.write(cast(int)(4 + portalName.length + 1 + 4));
             stream.writeCString(portalName);
             stream.write(cast(int)maxRows);
@@ -366,19 +371,21 @@ class PGConnection
 
         void sendFlushMessage()
         {
-            stream.write('H');
+            stream.write(RequestMessageTypes.Flush);
             stream.write(cast(int)4);
         }
 
         void sendSyncMessage()
         {
-            stream.write('S');
+            stream.write(RequestMessageTypes.Sync);
             stream.write(cast(int)4);
         }
 
         void sendQueryMessage(string query)
         {
-            stream.write('Q');
+            stream.write(RequestMessageTypes.Query);
+            stream.write(cast(int)(4 + query.length + 1));
+            stream.writeCString(query);
         }
 
         ResponseMessage handleResponseMessage(Message msg)
@@ -414,15 +421,14 @@ class PGConnection
 
             Message msg = getMessage();
 
+            with (ResponseMessageTypes)
             switch (msg.type)
             {
-                case 'E':
-                    // ErrorResponse
+                case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
                     sendSyncMessage();
                     throw new ServerErrorException(response);
-                case '1':
-                    // ParseComplete
+                case ParseComplete:
                     return;
                 default:
                     // async notice, notification
@@ -441,14 +447,13 @@ class PGConnection
 
             Message msg = getMessage();
 
+            with (ResponseMessageTypes)
             switch (msg.type)
             {
-                case 'E':
-                    // ErrorResponse
+                case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
                     throw new ServerErrorException(response);
-                case '3':
-                    // CloseComplete
+                case CloseComplete:
                     return;
                 default:
                     // async notice, notification
@@ -469,47 +474,18 @@ class PGConnection
 
             Message msg = getMessage();
 
+            with (ResponseMessageTypes)
             switch (msg.type)
             {
-                case 'E':
-                    // ErrorResponse
+                case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
                     sendSyncMessage();
                     throw new ServerErrorException(response);
-                case '3':
-                    // CloseComplete
+                case BindComplete, CloseComplete:
                     goto receive;
-                case '2':
-                    // BindComplete
-                    goto receive;
-                case 'T':
-                    // RowDescription (response to Describe)
-                    PGField[] fields;
-                    short fieldCount;
-                    short formatCode;
-                    PGField fi;
-
-                    msg.read(fieldCount);
-
-                    fields.length = fieldCount;
-
-                    foreach (i; 0..fieldCount)
-                    {
-                        msg.readCString(fi.name);
-                        msg.read(fi.tableOid);
-                        msg.read(fi.index);
-                        msg.read(fi.oid);
-                        msg.read(fi.typlen);
-                        msg.read(fi.modifier);
-                        msg.read(formatCode);
-
-                        enforce(formatCode == 1, new Exception("Field's format code returned in RowDescription is not 1 (binary)"));
-
-                        fields[i] = fi;
-                    }
-                    return () @trusted { return cast(PGFields)fields; }();
-                case 'n':
-                    // NoData (response to Describe)
+                case RowDescription:
+                    return parseRowDescription(msg);
+                case NoData:
                     return new immutable(PGField)[0];
                 default:
                     // async notice, notification
@@ -531,50 +507,22 @@ class PGConnection
 
             Message msg = getMessage();
 
+            with (ResponseMessageTypes)
             switch (msg.type)
             {
-                case 'E':
-                    // ErrorResponse
+                case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
                     throw new ServerErrorException(response);
-                case 'D':
-                    // DataRow
+                case DataRow:
                     finalizeQuery();
                     throw new Exception("This query returned rows.");
-                case 'C':
-                    // CommandComplete
-                    string tag;
-
-                    msg.readCString(tag);
-
-                    // GDC indexOf name conflict in std.string and std.algorithm
-                    auto s1 = std.string.indexOf(tag, ' ');
-                    if (s1 >= 0) {
-                        switch (tag[0 .. s1]) {
-                            case "INSERT":
-                                // INSERT oid rows
-                                auto s2 = lastIndexOf(tag, ' ');
-                                assert(s2 > s1);
-                                oid = to!uint(tag[s1 + 1 .. s2]);
-                                rowsAffected = to!ulong(tag[s2 + 1 .. $]);
-                                break;
-                            case "DELETE", "UPDATE", "MOVE", "FETCH":
-                                // DELETE rows
-                                rowsAffected = to!ulong(tag[s1 + 1 .. $]);
-                                break;
-                            default:
-                                // CREATE TABLE
-                                break;
-                         }
-                    }
-
+                case CommandComplete:
+                    parseCommandCompletion(msg, this, oid, rowsAffected);
                     goto receive;
-
-                case 'I':
-                    // EmptyQueryResponse
+                case EmptyQueryResponse:
                     goto receive;
-                case 'Z':
-                    // ReadyForQuery
+                case ReadyForQuery:
+                    parseReadyForQuery(msg, this);
                     return rowsAffected;
                 default:
                     // async notice, notification
@@ -602,7 +550,7 @@ class PGConnection
                         s ~= text("row.setNull!(", i, ")();\n");
                         s ~= "else\n";
                         s ~= text("row.set!(fieldTypes[", i, "], ", i, ")(",
-                                  "msg.readBaseType!(fieldTypes[", i, "])(fields[", i, "].oid, fieldLen)",
+                                  "msg.readBaseType!(fieldTypes[", i, "])(fields[", i, "].oid, fields[", i, "].binaryMode, fieldLen)",
                                   ");\n");
                         // text() doesn't work with -inline option, CTFE bug
                     }
@@ -625,7 +573,6 @@ class PGConnection
             else
             {
                 row.setLength(fieldCount);
-
                 foreach (i; 0 .. fieldCount)
                 {
                     msg.read(fieldLen);
@@ -633,7 +580,7 @@ class PGConnection
                         row.setNull(i);
                     else
                     {
-                        () @trusted { row[i] = msg.readBaseType!(Row.ElemType)(fields[i].oid, fieldLen); }();
+                        () @trusted { row[i] = msg.readBaseType!(Row.ElemType)(fields[i].oid, fields[i].binaryMode, fieldLen); }();
                     }
                 }
             }
@@ -652,7 +599,9 @@ class PGConnection
                 // async notice, notification
                 handleAsync(msg);
             }
-            while (msg.type != 'Z'); // ReadyForQuery
+            while (msg.type != ResponseMessageTypes.ReadyForQuery);
+            // TODO: triggers InvalidMemoryError
+            //parseReadyForQuery(msg, this);
         }
 
         PGResultSet!Specs executeQuery(Specs...)(string portalName, ref PGFields fields)
@@ -661,33 +610,22 @@ class PGConnection
 
             PGResultSet!Specs result = new PGResultSet!Specs(this, fields, &fetchRow!Specs);
 
-            ulong rowsAffected = 0;
-
             sendExecuteMessage(portalName, 0);
             sendSyncMessage();
             sendFlushMessage();
+
+            ulong rowsAffected = 0;
 
         receive:
 
             Message msg = getMessage();
 
+            with (ResponseMessageTypes)
             switch (msg.type)
             {
-                case 'D':
-                    // DataRow
-                    alias DBRow!Specs Row;
-
-                    result.row = fetchRow!Specs(msg, fields);
-                    static if (!Row.hasStaticLength)
-                        result.row.columnToIndex = &result.columnToIndex;
-                    result.validRow = true;
-                    result.nextMsg = getMessage();
-
-                    activeResultSet = true;
-
-                    return result;
-                case 'C':
-                    // CommandComplete
+                case DataRow:
+                    return parseDataRow(msg, result, fields, this);
+                case CommandComplete:
                     string tag;
 
                     msg.readCString(tag);
@@ -699,18 +637,15 @@ class PGConnection
                     }
 
                     goto receive;
-                case 'I':
-                    // EmptyQueryResponse
+                case EmptyQueryResponse:
                     throw new Exception("Query string is empty.");
-                case 's':
-                    // PortalSuspended
+                case PortalSuspended:
                     throw new Exception("Command suspending is not supported.");
-                case 'Z':
-                    // ReadyForQuery
+                case ReadyForQuery:
+                    parseReadyForQuery(msg, this);
                     result.nextMsg = msg;
                     return result;
-                case 'E':
-                    // ErrorResponse
+                case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
                     throw new ServerErrorException(response);
                 default:
@@ -718,7 +653,6 @@ class PGConnection
                     handleAsync(msg);
                     goto receive;
             }
-
             assert(0);
         }
 
@@ -726,17 +660,20 @@ class PGConnection
         {
             import std.stdio;
             writefln("msg %s: %s", msg.type, msg.data);
+
+            with (ResponseMessageTypes)
             switch (msg.type)
             {
-                case 'A':
+                case NotificationResponse:
                     int msgLength = msg.read!int;
                     int originPid = msg.read!int;
                     string channelName = msg.readCString;
                     string payload = msg.readCString;
                     writeln("[Async] Notification: ", channelName, ":", payload);
                     break;
-                case 'Z':
+                case ReadyForQuery:
                     // ReadyForQuery (readiness to process new command)
+                    parseReadyForQuery(msg, this);
                     writeln("[Async] Z");
                     break;
                 default:
@@ -800,18 +737,17 @@ class PGConnection
 
             Message msg = getMessage();
 
+            with (ResponseMessageTypes)
             switch (msg.type)
             {
-                case 'E', 'N':
-                    // ErrorResponse, NoticeResponse
+                case ErrorResponse, NoticeResponse:
                     ResponseMessage response = handleResponseMessage(msg);
 
-                    if (msg.type == 'N')
+                    if (msg.type == NoticeResponse)
                         goto receive;
 
                     throw new ServerErrorException(response);
-                case 'R':
-                    // AuthenticationXXXX
+                case AuthenticationXXXX:
                     enforce(msg.data.length >= 4);
 
                     int atype;
@@ -852,8 +788,7 @@ class PGConnection
                             throw new Exception("Unsupported authentication type");
                     }
 
-                case 'S':
-                    // ParameterStatus
+                case ParameterStatus:
                     enforce(msg.data.length >= 2);
 
                     string pname, pvalue;
@@ -865,8 +800,7 @@ class PGConnection
 
                     goto receive;
 
-                case 'K':
-                    // BackendKeyData
+                case BackendKeyData:
                     enforce(msg.data.length == 8);
 
                     msg.read(serverProcessID);
@@ -874,20 +808,8 @@ class PGConnection
 
                     goto receive;
 
-                case 'Z':
-                    // ReadyForQuery
-                    enforce(msg.data.length == 1);
-
-                    msg.read(cast(char)trStatus);
-
-                    // check for validity
-                    with (TransactionStatus)
-                    switch (trStatus)
-                    {
-                        case OutsideTransaction, InsideTransaction, InsideFailedTransaction: break;
-                        default: throw new Exception("Invalid transaction status: " ~ trStatus);
-                    }
-
+                case ReadyForQuery:
+                    parseReadyForQuery(msg, this);
                     // connection is opened and now it's possible to send queries
                     reloadAllTypes();
                     return;
@@ -908,29 +830,124 @@ class PGConnection
         /// Shorthand methods using temporary PGCommand. Semantics is the same as PGCommand's.
         ulong executeNonQuery(string query)
         {
-            scope cmd = FreeListRef!PGCommand(this, query);
-            return cmd.executeNonQuery();
+            checkActiveResultSet();
+            sendQueryMessage(query);
+            ulong rowsAffected = 0;
+
+        receive:
+
+            Message msg = getMessage();
+
+            with (ResponseMessageTypes)
+            switch (msg.type)
+            {
+                case ErrorResponse:
+                    ResponseMessage response = handleResponseMessage(msg);
+                    throw new ServerErrorException(response);
+                case DataRow:
+                    finalizeQuery();
+                    throw new Exception("This query returned rows.");
+                case CommandComplete:
+                    uint oid;
+                    parseCommandCompletion(msg, this, oid, rowsAffected);
+                    goto receive;
+                case EmptyQueryResponse:
+                    goto receive;
+                case ReadyForQuery:
+                    parseReadyForQuery(msg, this);
+                    return rowsAffected;
+                default:
+                    // async notice, notification
+                    handleAsync(msg);
+                    goto receive;
+            }
         }
 
         /// ditto
         PGResultSet!Specs executeQuery(Specs...)(string query)
         {
-            scope cmd = FreeListRef!PGCommand(this, query);
-            return cmd.executeQuery!Specs();
+            checkActiveResultSet();
+            PGResultSet!Specs result;
+            PGFields fields;
+
+            sendQueryMessage(query);
+
+            ulong rowsAffected = 0;
+
+        receive:
+
+            Message msg = getMessage();
+
+            with (ResponseMessageTypes)
+            switch (msg.type)
+            {
+                case RowDescription:
+                    // response to Describe
+                    fields = parseRowDescription(msg);
+                    result = new PGResultSet!Specs(this, fields, &fetchRow!Specs);
+                    goto receive;
+                case DataRow:
+                    return parseDataRow(msg, result, fields, this);
+                case CommandComplete:
+                    string tag;
+
+                    msg.readCString(tag);
+
+                    auto s2 = lastIndexOf(tag, ' ');
+                    if (s2 >= 0)
+                    {
+                        rowsAffected = to!ulong(tag[s2 + 1 .. $]);
+                    }
+
+                    goto receive;
+                case EmptyQueryResponse:
+                    throw new Exception("Query string is empty.");
+                case PortalSuspended:
+                    throw new Exception("Command suspending is not supported.");
+                case ReadyForQuery:
+                    parseReadyForQuery(msg, this);
+                    result.nextMsg = msg;
+                    return result;
+                case ErrorResponse:
+                    ResponseMessage response = handleResponseMessage(msg);
+                    throw new ServerErrorException(response);
+                default:
+                    // async notice, notification
+                    handleAsync(msg);
+                    goto receive;
+            }
+            assert(0);
+
         }
 
         /// ditto
         DBRow!Specs executeRow(Specs...)(string query, bool throwIfMoreRows = true)
         {
-            scope cmd = FreeListRef!PGCommand(this, query);
-            return cmd.executeRow!Specs(throwIfMoreRows);
+            auto result = executeQuery!Specs(query);
+            scope(exit) result.close();
+            enforce(!result.empty(), "Result doesn't contain any rows.");
+            auto row = result.front();
+            if (throwIfMoreRows)
+            {
+                result.popFront();
+                enforce(result.empty(), "Result contains more than one row.");
+            }
+            return row;
         }
 
         /// ditto
         T executeScalar(T)(string query, bool throwIfMoreRows = true)
         {
-            scope cmd = new PGCommand(this, query);
-            return cmd.executeScalar!T(throwIfMoreRows);
+            auto result = executeQuery!T(query);
+            scope(exit) result.close();
+            enforce(!result.empty(), "Result doesn't contain any rows.");
+            T row = result.front();
+            if (throwIfMoreRows)
+            {
+                result.popFront();
+                enforce(result.empty(), "Result contains more than one row.");
+            }
+            return row;
         }
 
         void reloadArrayTypes()

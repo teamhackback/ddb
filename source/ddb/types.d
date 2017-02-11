@@ -231,6 +231,8 @@ struct PGField
     short typlen;
     /// The type modifier (see pg_attribute.atttypmod). The meaning of the modifier is type-specific.
     int modifier;
+    /// Whether the response from the server is in binary (or text otherwise)
+    bool binaryMode;
 }
 
 struct Point {
