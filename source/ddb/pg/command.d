@@ -151,6 +151,8 @@ class PGCommand
         return conn.executeNonQuery(preparedName, _lastInsertOid);
     }
 
+    alias execute = executeNonQuery;
+
     /**
     Executes query which returns row sets, such as SELECT command.
     Params:
@@ -163,6 +165,8 @@ class PGCommand
         checkBound();
         return conn.executeQuery!Specs(preparedName, _fields);
     }
+
+    alias query = executeQuery;
 
     /**
     Executes query and returns only first row of the result.
@@ -192,6 +196,8 @@ class PGCommand
         return row;
     }
 
+    alias row = executeRow;
+
     /**
     Executes query returning exactly one row and field. By default, returns Variant type.
     Params:
@@ -219,6 +225,8 @@ class PGCommand
         }
         return row;
     }
+
+    alias scalar = executeScalar;
 }
 
 

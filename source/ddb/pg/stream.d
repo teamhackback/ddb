@@ -42,6 +42,15 @@ class PGStream
         }
     }
 
+    /// checks whether the socket is still connected
+    bool isAlive()
+    {
+        version(Have_vibe_core)
+            return socket.connected;
+        else
+            return socket.isAlive;
+    }
+
     package(ddb) void read(ubyte[] buffer)
     {
         version(Have_vibe_core)

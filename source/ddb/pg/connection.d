@@ -533,6 +533,12 @@ class PGConnection
                     parseReadyForQuery(msg, this);
                     writeln("[Async] Z");
                     break;
+                case NoticeResponse:
+                    writeln("[Async] Unhandled NoticeResponse", );
+                    break;
+                case ParameterStatus:
+                    writeln("[Async] Unhandled ParameterStatus", );
+                    break;
                 default:
                     writeln("[Async] Unknonw Notification", );
             }
@@ -680,8 +686,11 @@ class PGConnection
         /// Closes current connection to the server.
         void close()
         {
-            sendTerminateMessage();
-            stream.socket.close();
+            if (stream.isAlive)
+            {
+                sendTerminateMessage();
+                stream.socket.close();
+            }
         }
 
         /// Shorthand methods using temporary PGCommand. Semantics is the same as PGCommand's.
@@ -719,6 +728,8 @@ class PGConnection
                     goto receive;
             }
         }
+
+        alias execute = executeNonQuery;
 
         /// ditto
         PGResultSet!Specs executeQuery(Specs...)(string query)
@@ -763,7 +774,7 @@ class PGConnection
                     throw new Exception("Command suspending is not supported.");
                 case ReadyForQuery:
                     parseReadyForQuery(msg, this);
-                    result.nextMsg = msg;
+                    //result.nextMsg = msg;
                     return result;
                 case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
@@ -774,8 +785,9 @@ class PGConnection
                     goto receive;
             }
             assert(0);
-
         }
+
+        alias query = executeQuery;
 
         /// ditto
         DBRow!Specs executeRow(Specs...)(string query, bool throwIfMoreRows = true)
@@ -792,6 +804,8 @@ class PGConnection
             return row;
         }
 
+        alias row = executeRow;
+
         /// ditto
         T executeScalar(T)(string query, bool throwIfMoreRows = true)
         {
@@ -805,6 +819,19 @@ class PGConnection
                 enforce(result.empty(), "Result contains more than one row.");
             }
             return row;
+        }
+
+        alias scalar = executeScalar;
+
+        void listen(string channel)
+        {
+            // TODO: register callback
+            executeNonQuery("LISTEN " ~ channel);
+        }
+
+        void unlisten(string channel)
+        {
+           executeNonQuery("UNLISTEN " ~ channel);
         }
 
         void reloadArrayTypes()
