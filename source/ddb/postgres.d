@@ -181,6 +181,9 @@ version(Have_vibe_core)
         {
             return new PGConnection(m_params);
         }
+
+        @property void maxConcurrency(uint val) { m_pool.maxConcurrency = val; }
+        @property uint maxConcurrency() { return m_pool.maxConcurrency; }
     }
 }
 else
