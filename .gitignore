@@ -1,3 +1,5 @@
 .dub
 hb-ddb-test-library
 libhb-ddb.a
+docs.json
+docs
