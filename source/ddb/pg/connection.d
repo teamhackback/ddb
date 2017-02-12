@@ -942,6 +942,7 @@ class PGConnection
                 writeln(row);
         });
         ---
+        Throws: CommitTransactionException if the rollback failed.
         Throws: RollbackTransactionException if the rollback failed.
         */
         R transaction(R)(TransactionMode mode, scope R delegate() @safe execution)
@@ -959,8 +960,9 @@ class PGConnection
                     commit();
                     return result;
                 }
-            } catch (CommitTransactionException e) {
+            } catch (Exception e) {
                 rollback();
+                throw e;
             }
         }
 
@@ -998,8 +1000,9 @@ class PGConnection
                 {
                     try {
                         _conn.commit();
-                    } catch (CommitTransactionException e) {
+                    } catch (Exception e) {
                         _conn.rollback();
+                        throw e;
                     }
                 }
             }
