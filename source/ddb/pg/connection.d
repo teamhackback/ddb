@@ -36,6 +36,9 @@ else
     }
 }
 
+version(Have_vibe_core) { import vibe.core.log : logDebug; }
+else { import std.experimental.logger : logDebug = log; }
+
 @safe:
 
 /*
@@ -518,9 +521,6 @@ class PGConnection
 
         void handleAsync(scope ref Message msg)
         {
-            import std.stdio;
-            writefln("msg %s: %s", msg.type, msg.data);
-
             with (PGResponseMessageTypes)
             switch (msg.type)
             {
@@ -529,21 +529,21 @@ class PGConnection
                     int originPid = msg.read!int;
                     string channelName = msg.readCString;
                     string payload = msg.readCString;
-                    writeln("[Async] Notification: ", channelName, ":", payload);
+                    logDebug("[Async] Notification: ", channelName, ":", payload);
                     break;
                 case ReadyForQuery:
                     // ReadyForQuery (readiness to process new command)
                     parseReadyForQuery(msg, this);
-                    writeln("[Async] Z");
+                    logDebug("[Async] ReadyForQuery");
                     break;
                 case NoticeResponse:
-                    writeln("[Async] Unhandled NoticeResponse", );
+                    logDebug("[Async] Unhandled NoticeResponse", );
                     break;
                 case ParameterStatus:
-                    writeln("[Async] Unhandled ParameterStatus", );
+                    logDebug("[Async] Unhandled ParameterStatus", );
                     break;
                 default:
-                    writeln("[Async] Unknonw Notification", );
+                    logDebug("[Async] Unknonw Notification", );
             }
         }
 
@@ -583,6 +583,7 @@ class PGConnection
         {
             enforce("host" in params, new ParamException("Required parameter 'host' not found"));
             enforce("user" in params, new ParamException("Required parameter 'user' not found"));
+            logDebug("Create PGConnection to %s", params["host"]);
 
             ushort port = "port" in params? params["port"].to!ushort : 5432;
 
@@ -689,6 +690,7 @@ class PGConnection
         /// Closes current connection to the server.
         void close()
         {
+            logDebug("Close PGConnection");
             if (stream.isAlive)
             {
                 sendTerminateMessage();
@@ -711,6 +713,7 @@ class PGConnection
         */
         ulong execute(string query)
         {
+            logDebug("Execute: %s", query);
             checkActiveResultSet();
             sendQueryMessage(query);
             ulong rowsAffected = 0;
@@ -758,6 +761,7 @@ class PGConnection
         */
         PGResultSet!Specs query(Specs...)(string query)
         {
+            logDebug("Query: %s", query);
             checkActiveResultSet();
             PGResultSet!Specs result;
             PGFields fields;

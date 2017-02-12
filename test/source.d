@@ -1,8 +1,11 @@
+@safe:
 void runTest() @safe
 {
     import ddb.pg : PostgresDB, PGCommand;
     import std.process : environment;
     import std.stdio;
+    import vibe.core.log;
+    setLogLevel(LogLevel.debug_);
 
     auto pdb = new PostgresDB([
         "host" : environment.get("DB_HOST", "localhost"),

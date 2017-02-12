@@ -49,7 +49,7 @@ class PGResultSet(Specs...)
             close();
     }
 
-    private size_t columnToIndex(string column, size_t index)
+    package(ddb.pg) size_t columnToIndex(string column, size_t index)
     {
         size_t[]* indices = column in columnMap;
         enforce(indices, "Unknown column name");
