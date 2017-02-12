@@ -351,7 +351,7 @@ class PGConnection
             }
         }
 
-        ulong executeNonQuery(string portalName, out uint oid)
+        ulong execute(string portalName, out uint oid)
         {
             checkActiveResultSet();
             ulong rowsAffected = 0;
@@ -461,7 +461,7 @@ class PGConnection
             //parseReadyForQuery(msg, this);
         }
 
-        PGResultSet!Specs executeQuery(Specs...)(string portalName, ref PGFields fields)
+        PGResultSet!Specs query(Specs...)(string portalName, ref PGFields fields)
         {
             checkActiveResultSet();
 
@@ -693,8 +693,20 @@ class PGConnection
             }
         }
 
-        /// Shorthand methods using temporary PGCommand. Semantics is the same as PGCommand's.
-        ulong executeNonQuery(string query)
+        /**
+        Executes a non query command, i.e. query which doesn't return any rows. Commonly used with
+        data manipulation commands, such as INSERT, UPDATE and DELETE.
+        Params:
+            query = query string to execute
+        Examples:
+        ---
+        auto deletedRows = conn.execute("DELETE * FROM table");
+        auto updatedRows = conn.execute("UPDATE table SET quantity = 1 WHERE price > 100");
+        assert(conn.query("INSERT INTO table VALUES(1, 50)") == 1);
+        ---
+        Returns: Number of affected rows.
+        */
+        ulong execute(string query)
         {
             checkActiveResultSet();
             sendQueryMessage(query);
@@ -729,11 +741,19 @@ class PGConnection
             }
         }
 
-        alias execute = executeNonQuery;
-        alias run = executeNonQuery;
+        alias run = execute;
 
-        /// ditto
-        PGResultSet!Specs executeQuery(Specs...)(string query)
+        /**
+        Executes query which returns row sets, such as SELECT command.
+        Params:
+            query = query string to execute
+        Examples:
+        ---
+        auto result = conn.query("SELECT * FROM 'Foo'");
+        ---
+        Returns: InputRange of DBRow!Specs.
+        */
+        PGResultSet!Specs query(Specs...)(string query)
         {
             checkActiveResultSet();
             PGResultSet!Specs result;
@@ -788,12 +808,25 @@ class PGConnection
             assert(0);
         }
 
-        alias query = executeQuery;
+        /**
+        Executes query and returns only first row of the result.
+        Params:
+            query = query string to execute
+            throwIfMoreRows = If true, throws Exception when result contains more than one row.
+        Examples:
+        ---
+        auto cmd = new PGCommand(conn, "SELECT 1, 'abc'");
+        auto row1 = cmd.executeRow!(int, string); // returns DBRow!(int, string)
+        assert(is(typeof(i[0]) == int) && is(typeof(i[1]) == string));
+        auto row2 = cmd.executeRow; // returns DBRow!(Variant[])
+        ---
 
-        /// ditto
+        Throws: Exception if result doesn't contain any rows or field count do not match.
+        Throws: Exception if result contains more than one row when throwIfMoreRows is true.
+        */
         DBRow!Specs executeRow(Specs...)(string query, bool throwIfMoreRows = true)
         {
-            auto result = executeQuery!Specs(query);
+            auto result = query!Specs(query);
             scope(exit) result.close();
             enforce(!result.empty(), "Result doesn't contain any rows.");
             auto row = result.front();
@@ -807,10 +840,23 @@ class PGConnection
 
         alias row = executeRow;
 
-        /// ditto
+        /**
+        Executes query returning exactly one row and field. By default, returns Variant type.
+        Params:
+            query = query string to execute
+            throwIfMoreRows = If true, throws Exception when result contains more than one row.
+        Examples:
+        ---
+        auto i = conn.executeScalar!int; // returns int
+        assert(is(typeof(i) == int));
+        auto v = conn.executeScalar; // returns Variant
+        ---
+        Throws: Exception if result doesn't contain any rows or if it contains more than one field.
+        Throws: Exception if result contains more than one row when throwIfMoreRows is true.
+        */
         T executeScalar(T)(string query, bool throwIfMoreRows = true)
         {
-            auto result = executeQuery!T(query);
+            auto result = query!T(query);
             scope(exit) result.close();
             enforce(!result.empty(), "Result doesn't contain any rows.");
             T row = result.front();
@@ -824,24 +870,41 @@ class PGConnection
 
         alias scalar = executeScalar;
 
+        /**
+        Subscribes to a channel.
+        Params:
+            channel = name of the channel to subscribe
+        */
         void listen(string channel)
         {
             // TODO: register callback
-            executeNonQuery("LISTEN " ~ channel);
+            execute("LISTEN " ~ channel);
         }
 
+        /**
+        Unsubscribes from a channel.
+        Params:
+            channel = name of the channel to unsubscribe
+        */
         void unlisten(string channel)
         {
-           executeNonQuery("UNLISTEN " ~ channel);
+           execute("UNLISTEN " ~ channel);
         }
 
-        /// starts a transaction
+        /**
+        Starts a transaction.
+        Params:
+            mode = transaction mode to use
+        */
         void begin(TransactionMode mode = DefaultTransactionMode)
         {
             execute("BEGIN TRANSACTION ISOLATION LEVEL " ~ mode.level ~ " " ~ mode.rwMode ~ ";");
         }
 
-        // commits a transaction
+        /**
+        Commits a transaction.
+        Throws: CommitTransactionException if the commit failed.
+        */
         void commit() {
             try {
                 execute("COMMIT;");
@@ -850,7 +913,10 @@ class PGConnection
             }
         }
 
-        // rolls a transaction back
+        /**
+        Rolls a transaction back.
+        Throws: RollbackTransactionException if the rollback failed.
+        */
         void rollback()
         {
             try {
@@ -860,7 +926,21 @@ class PGConnection
             }
         }
 
-        /// work in a transaction context
+        /**
+        Work in a transaction context.
+        Params:
+            mode = transaction mode to use
+        Examples:
+        ---
+        conn.transaction({
+            auto result2 = conn.executeQuery(`SELECT * from "Foo" Limit 1`);
+            scope(exit) () @trusted { result2.destroy; }();
+            foreach (row; result2)
+                writeln(row);
+        });
+        ---
+        Throws: RollbackTransactionException if the rollback failed.
+        */
         R transaction(R)(TransactionMode mode, scope R delegate() @safe execution)
         {
             try {
@@ -876,16 +956,12 @@ class PGConnection
                     commit();
                     return result;
                 }
-            } catch (Exception e) {
-                try {
-                    rollback();
-                } catch (Exception e) {
-                    throw new Exception("Unexpected exception during rollback transaction", e);
-                }
-                throw e;
+            } catch (CommitTransactionException e) {
+                rollback();
             }
         }
 
+        /// ditto
         R transaction(R)(scope R delegate() @safe execution)
         {
             static if (is(R == void))
@@ -894,7 +970,21 @@ class PGConnection
                 return transaction!R(DefaultTransactionMode, execution);
         }
 
-        // scoped transaction
+        /**
+        Work in a transaction context.
+        Params:
+            mode = transaction mode to use
+        Examples:
+        ---
+        with (conn.transaction) {
+            auto result2 = conn.executeQuery(`SELECT * from "Foo" Limit 1`);
+            scope(exit) () @trusted { result2.destroy; }();
+            foreach (row; result2)
+                writeln(row);
+        }
+        ---
+        Throws: RollbackTransactionException if the rollback failed.
+        */
         auto transaction(TransactionMode mode = DefaultTransactionMode)
         {
             static struct ScopedTransaction
@@ -903,7 +993,11 @@ class PGConnection
 
                 ~this()
                 {
-                    _conn.commit();
+                    try {
+                        _conn.commit();
+                    } catch (CommitTransactionException e) {
+                        _conn.rollback();
+                    }
                 }
             }
 

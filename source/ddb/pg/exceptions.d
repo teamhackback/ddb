@@ -33,14 +33,27 @@ class ServerErrorException: Exception
     }
 }
 
-class CommitTransactionException : Exception {
+///
+class TransactionException : Exception
+{
 	this(string msg, Throwable thr)
     {
         super(msg, thr);
     }
 }
 
-class RollbackTransactionException : Exception {
+///
+class CommitTransactionException : TransactionException
+{
+	this(string msg, Throwable thr)
+    {
+        super(msg, thr);
+    }
+}
+
+///
+class RollbackTransactionException : TransactionException
+{
 	this(string msg, Throwable thr)
     {
         super(msg, thr);

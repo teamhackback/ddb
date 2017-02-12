@@ -136,43 +136,40 @@ class PGCommand
     Examples:
     ---
     auto cmd = new PGCommand(conn, "DELETE * FROM table");
-    auto deletedRows = cmd.executeNonQuery;
+    auto deletedRows = cmd.execute;
     cmd.query = "UPDATE table SET quantity = 1 WHERE price > 100";
-    auto updatedRows = cmd.executeNonQuery;
+    auto updatedRows = cmd.execute;
     cmd.query = "INSERT INTO table VALUES(1, 50)";
-    assert(cmd.executeNonQuery == 1);
+    assert(cmd.execute == 1);
     ---
     Returns: Number of affected rows.
     */
-    ulong executeNonQuery()
+    ulong execute()
     {
         checkPrepared(true);
         checkBound();
-        return conn.executeNonQuery(preparedName, _lastInsertOid);
+        return conn.execute(preparedName, _lastInsertOid);
     }
 
-    alias execute = executeNonQuery;
-    alias run = executeNonQuery;
+    alias run = execute;
 
     /**
     Executes query which returns row sets, such as SELECT command.
     Params:
-    bufferedRows = Number of rows that may be allocated at the same time.
+        bufferedRows = Number of rows that may be allocated at the same time.
     Returns: InputRange of DBRow!Specs.
     */
     PGResultSet!Specs executeQuery(Specs...)()
     {
         checkPrepared(true);
         checkBound();
-        return conn.executeQuery!Specs(preparedName, _fields);
+        return conn.query!Specs(preparedName, _fields);
     }
-
-    alias query = executeQuery;
 
     /**
     Executes query and returns only first row of the result.
     Params:
-    throwIfMoreRows = If true, throws Exception when result contains more than one row.
+        throwIfMoreRows = If true, throws Exception when result contains more than one row.
     Examples:
     ---
     auto cmd = new PGCommand(conn, "SELECT 1, 'abc'");
@@ -185,7 +182,7 @@ class PGCommand
     */
     DBRow!Specs executeRow(Specs...)(bool throwIfMoreRows = true)
     {
-        auto result = executeQuery!Specs();
+        auto result = query!Specs();
         scope(exit) result.close();
         enforce(!result.empty(), "Result doesn't contain any rows.");
         auto row = result.front();
@@ -202,7 +199,7 @@ class PGCommand
     /**
     Executes query returning exactly one row and field. By default, returns Variant type.
     Params:
-    throwIfMoreRows = If true, throws Exception when result contains more than one row.
+        throwIfMoreRows = If true, throws Exception when result contains more than one row.
     Examples:
     ---
     auto cmd = new PGCommand(conn, "SELECT 1");
@@ -215,7 +212,7 @@ class PGCommand
     */
     T executeScalar(T = Variant)(bool throwIfMoreRows = true)
     {
-        auto result = executeQuery!T();
+        auto result = query!T();
         scope(exit) result.close();
         enforce(!result.empty(), "Result doesn't contain any rows.");
         T row = result.front();
