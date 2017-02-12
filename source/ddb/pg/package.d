@@ -63,7 +63,7 @@ $(TABLE
 )
 
 Examples:
-with vibe.d use -version=Have_vibe_d_core and use a ConnectionPool (PostgresDB Object & lockConnection)
+with vibe.d use -version=Have_vibe_core and use a ConnectionPool (PostgresDB Object & lockConnection)
 ---
 
     auto pdb = new PostgresDB([
@@ -143,42 +143,55 @@ public import ddb.pg.connection : PGConnection;
 public import ddb.pg.exceptions;
 public import ddb.pg.types;
 
+@safe:
+
+class PostgresDB
+{
 version(Have_vibe_core)
 {
-    @safe:
+    import vibe.core.connectionpool : ConnectionPool;
+    import ddb.pg.connection : PGConnection;
 
-    class PostgresDB {
-        import vibe.core.connectionpool : ConnectionPool;
-        import ddb.pg.connection : PGConnection;
-
-        private {
-            string[string] m_params;
-            ConnectionPool!PGConnection m_pool;
-        }
-
-        this(string[string] conn_params)
-        {
-            m_params = conn_params.dup;
-            m_pool = new ConnectionPool!PGConnection(&createConnection);
-        }
-
-        auto lockConnection() { return m_pool.lockConnection(); }
-
-        private PGConnection createConnection()
-        {
-            return new PGConnection(m_params);
-        }
-
-        @property void maxConcurrency(uint val) @trusted { m_pool.maxConcurrency = val; }
-        @property uint maxConcurrency() @trusted { return m_pool.maxConcurrency; }
+    private {
+        const string[string] m_params;
+        ConnectionPool!PGConnection m_pool;
     }
+
+    this(string[string] conn_params)
+    {
+        m_params = conn_params.dup;
+        m_pool = new ConnectionPool!PGConnection(&createConnection);
+
+        // force a connection to cause an exception for wrong URLs
+        lockConnection();
+    }
+
+    auto lockConnection() { return m_pool.lockConnection(); }
+
+    private PGConnection createConnection()
+    {
+        return new PGConnection(m_params);
+    }
+
+    @property void maxConcurrency(uint val) @trusted { m_pool.maxConcurrency = val; }
+    @property uint maxConcurrency() @trusted { return m_pool.maxConcurrency; }
 }
 else
 {
-    class PostgresDB {
+    this(string[string] conn_params)
+    {
         static assert(false,
-                      "The 'PostgresDB' connection pool requires Vibe.d and therefore "~
-                      "must be used with -version=Have_vibe_d_core"
-                      );
+                        "The 'PostgresDB' connection pool requires Vibe.d and therefore "~
+                        "must be used with -version=Have_vibe_core"
+                     );
     }
+
+    PGConnection lockConnection() {
+        string[string] dummy;
+        return new PGConnection(dummy);
+    }
+
+    @property void maxConcurrency(uint val) @trusted {  }
+    @property uint maxConcurrency() @trusted { return 0; }
+}
 }

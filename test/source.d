@@ -11,7 +11,6 @@ void runTest() @safe
         "password" : environment["DB_PASSWORD"]
     ]);
     auto conn = pdb.lockConnection();
-    scope(exit) conn.close;
 
     // prepared statement
     {

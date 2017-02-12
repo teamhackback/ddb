@@ -95,7 +95,7 @@ class PGConnection
             return Message(this, type, msg);
         }
 
-        void sendStartupMessage(const string[string] params)
+        void sendStartupMessage(scope const string[string] params)
         {
             bool localParam(string key)
             {
@@ -579,7 +579,7 @@ class PGConnection
         ]);
         ---
         */
-        this(const string[string] params)
+        this(scope const string[string] params)
         {
             enforce("host" in params, new ParamException("Required parameter 'host' not found"));
             enforce("user" in params, new ParamException("Required parameter 'user' not found"));
