@@ -141,6 +141,7 @@ public import ddb.db;
 public import ddb.pg.command : PGCommand;
 public import ddb.pg.connection : PGConnection;
 public import ddb.pg.exceptions;
+public import ddb.pg.types;
 
 version(Have_vibe_core)
 {

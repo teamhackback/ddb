@@ -152,6 +152,7 @@ class PGCommand
     }
 
     alias execute = executeNonQuery;
+    alias run = executeNonQuery;
 
     /**
     Executes query which returns row sets, such as SELECT command.

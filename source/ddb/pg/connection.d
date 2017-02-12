@@ -730,6 +730,7 @@ class PGConnection
         }
 
         alias execute = executeNonQuery;
+        alias run = executeNonQuery;
 
         /// ditto
         PGResultSet!Specs executeQuery(Specs...)(string query)
@@ -832,6 +833,89 @@ class PGConnection
         void unlisten(string channel)
         {
            executeNonQuery("UNLISTEN " ~ channel);
+        }
+
+        /// starts a transaction
+        void begin(TransactionMode mode = DefaultTransactionMode)
+        {
+            execute("BEGIN TRANSACTION ISOLATION LEVEL " ~ mode.level ~ " " ~ mode.rwMode ~ ";");
+        }
+
+        // commits a transaction
+        void commit() {
+            try {
+                execute("COMMIT;");
+            } catch (Exception e) {
+                throw new CommitTransactionException("Exception during the commit trasaction", e);
+            }
+        }
+
+        // rolls a transaction back
+        void rollback()
+        {
+            try {
+                execute("ROLLBACK;");
+            } catch (Exception e) {
+                throw new RollbackTransactionException("Exception during the rollback transaction", e);
+            }
+        }
+
+        /// work in a transaction context
+        R transaction(R)(TransactionMode mode, scope R delegate() @safe execution)
+        {
+            try {
+                begin();
+                static if (is(R == void))
+                {
+                    execution();
+                    commit();
+                }
+                else
+                {
+                    auto result = execution();
+                    commit();
+                    return result;
+                }
+            } catch (Exception e) {
+                try {
+                    rollback();
+                } catch (Exception e) {
+                    throw new Exception("Unexpected exception during rollback transaction", e);
+                }
+                throw e;
+            }
+        }
+
+        R transaction(R)(scope R delegate() @safe execution)
+        {
+            static if (is(R == void))
+                transaction!R(DefaultTransactionMode, execution);
+            else
+                return transaction!R(DefaultTransactionMode, execution);
+        }
+
+        // scoped transaction
+        auto transaction(TransactionMode mode = DefaultTransactionMode)
+        {
+            static struct ScopedTransaction
+            {
+                private PGConnection _conn;
+
+                ~this()
+                {
+                    _conn.commit();
+                }
+            }
+
+            begin(mode);
+            return ScopedTransaction(this);
+        }
+
+        // new transaction will begin automatically after the call to rollback().
+        // TODO: expose as UDA
+        auto atomic(TransactionMode mode = DefaultTransactionMode)
+        {
+
         }
 
         void reloadArrayTypes()

@@ -46,6 +46,48 @@ enum PGRequestMessageTypes : char {
     CopyData = 'd',
 }
 
+enum ReadWriteMode : string {
+	ReadWrite = "READ WRITE",
+	ReadOnly = "READ ONLY"
+}
+
+enum IsolationLevel : string {
+	Serializable = "SERIALIZABLE",
+	RepeatableRead = "REPEATABLE READ",
+	ReadCommited = "READ COMMITTED",
+	ReadUnCommited = "READ UNCOMMITTED"
+}
+
+struct TransactionMode {
+	package(ddb.pg) {
+		ReadWriteMode rwMode;
+		IsolationLevel level;
+	}
+
+	this(IsolationLevel level) {
+		this(ReadWriteMode.ReadWrite, level);
+	}
+
+	this(ReadWriteMode rwMode) {
+		this(rwMode, IsolationLevel.ReadCommited);
+	}
+
+	this(ReadWriteMode rwMode, IsolationLevel level) {
+		this.rwMode = rwMode;
+		this.level = level;
+	}
+}
+
+enum DefaultTransactionMode = txMode(ReadWriteMode.ReadWrite);
+
+TransactionMode txMode(ReadWriteMode rwMode = ReadWriteMode.ReadWrite, IsolationLevel level = IsolationLevel.ReadCommited) {
+	return TransactionMode(rwMode, level);
+}
+
+TransactionMode txMode(IsolationLevel level = IsolationLevel.ReadCommited, ReadWriteMode rwMode = ReadWriteMode.ReadWrite) {
+	return TransactionMode(rwMode, level);
+}
+
 const PGEpochDate = Date(2000, 1, 1);
 const PGEpochDay = PGEpochDate.dayOfGregorianCal;
 const PGEpochTime = TimeOfDay(0, 0, 0);

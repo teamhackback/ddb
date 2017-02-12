@@ -4,9 +4,11 @@ import ddb.pg.messages : ResponseMessage;
 import std.exception;
 public import std.exception : enforce;
 
+@safe:
+
 class ParamException : Exception
 {
-    this(string msg, string fn = __FILE__, size_t ln = __LINE__) @safe pure nothrow
+    this(string msg, string fn = __FILE__, size_t ln = __LINE__)  pure nothrow
     {
         super(msg, fn, ln);
     }
@@ -19,14 +21,28 @@ class ServerErrorException: Exception
     ResponseMessage error;
     alias error this;
 
-    this(string msg, string fn = __FILE__, size_t ln = __LINE__) @safe pure nothrow
+    this(string msg, string fn = __FILE__, size_t ln = __LINE__)  pure nothrow
     {
         super(msg, fn, ln);
     }
 
-    this(ResponseMessage error, string fn = __FILE__, size_t ln = __LINE__) @safe
+    this(ResponseMessage error, string fn = __FILE__, size_t ln = __LINE__)
     {
         super(error.toString(), fn, ln);
         this.error = error;
+    }
+}
+
+class CommitTransactionException : Exception {
+	this(string msg, Throwable thr)
+    {
+        super(msg, thr);
+    }
+}
+
+class RollbackTransactionException : Exception {
+	this(string msg, Throwable thr)
+    {
+        super(msg, thr);
     }
 }
