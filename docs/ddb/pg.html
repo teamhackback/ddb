@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Module ddb.pg</title>
+		<link rel="stylesheet" type="text/css" href="../styles/ddox.css"/>
+		<link rel="stylesheet" href="../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../scripts/jquery.js">/**/</script>
+		<script type="text/javascript" src="../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+						<ul class="tree-view">
+							<li class="tree-view">
+								<a href="#" class="package">ddb</a>
+						<ul class="tree-view">
+							<li class="tree-view">
+								<a href="#" class="package">pg</a>
+						<ul class="tree-view">
+							<li>
+								<a href="../ddb/pg.html" class="selected module">Package members</a>
+							</li>
+							<li>
+								<a href="../ddb/pg/command.html" class=" module">command</a>
+							</li>
+							<li>
+								<a href="../ddb/pg/connection.html" class=" module">connection</a>
+							</li>
+							<li>
+								<a href="../ddb/pg/exceptions.html" class=" module">exceptions</a>
+							</li>
+							<li>
+								<a href="../ddb/pg/parameters.html" class=" module">parameters</a>
+							</li>
+							<li>
+								<a href="../ddb/pg/resultset.html" class=" module">resultset</a>
+							</li>
+							<li>
+								<a href="../ddb/pg/stream.html" class=" module">stream</a>
+							</li>
+							<li>
+								<a href="../ddb/pg/types.html" class=" module">types</a>
+							</li>
+						</ul>
+							</li>
+							<li>
+								<a href="../ddb/db.html" class=" module">db</a>
+							</li>
+						</ul>
+							</li>
+						</ul>
+				<noscript>
+					<p style="color: red">The search functionality needs JavaScript enabled</p>
+				</noscript>
+				<div id="symbolSearchPane" style="display: none">
+					<p>
+						<input id="symbolSearch" type="text" placeholder="Search for symbols" onchange="performSymbolSearch(24);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+					</p>
+	<ul id="symbolSearchResults" style="display: none"></ul>
+	<script type="application/javascript" src="../symbols.js"></script>
+	<script type="application/javascript">
+var symbolSearchRootDir = "../";
+$('#symbolSearchPane').show();
+	</script>
+				</div>
+		</nav>
+		<div id="main-contents">
+			<h1>Module ddb.pg</h1>
+			<p>PostgreSQL client implementation.
+</p>
+<section></section>
+
+			<section><section><h2>Features</h2>
+<p><ul>    <li>Standalone (does not depend on libpq)</li>
+    <li>Binary formatting (avoids parsing overhead)</li>
+    <li>Prepared statements</li>
+    <li>Parametrized queries (partially working)</li>
+    <li><a href="http://www.postgresql.org/docs/9.0/static/datatype-enum.html">Enums</a></li>
+    <li><a href="http://www.postgresql.org/docs/9.0/static/arrays.html">Arrays</a></li>
+    <li><a href="http://www.postgresql.org/docs/9.0/static/rowtypes.html">Composite types</a></li>
+</ul>
+</p>
+</section>
+<section><h2>TODOs</h2>
+<p><ul>    <li>Redesign parametrized queries</li>
+    <li>BigInt/Numeric types support</li>
+    <li>Geometric types support</li>
+    <li>Network types support</li>
+    <li>Bit string types support</li>
+    <li>UUID type support</li>
+    <li>XML types support</li>
+    <li>Transaction support</li>
+    <li>Asynchronous notifications</li>
+    <li>Better memory management</li>
+    <li>More friendly PGFields</li>
+</ul>
+</p>
+</section>
+<section><h2>Bugs</h2>
+<p><ul>    <li>Support only cleartext and MD5 <a href="http://www.postgresql.org/docs/9.0/static/auth-methods.html">authentication</a></li>
+    <li>Unfinished parameter handling</li>
+    <li>interval is converted to Duration, which does not support months</li>
+</ul>
+</p>
+
+<p><b>Data type mapping:</b>
+</p>
+
+<p><table>    <tr><th>PostgreSQL type</th> <th>Aliases</th> <th>Default D type</th> <th>D type mapping possibilities</th></tr>
+    <tr><td>smallint</td> <td>int2</td> <td>short</td> <td rowspan="19">Any type convertible from default D type</td></tr>
+    <tr><td>integer</td> <td>int4</td> <td>int</td></tr>
+    <tr><td>bigint</td> <td>int8</td> <td>long</td></tr>
+    <tr><td>oid</td> <td>reg***</td> <td>uint</td></tr>
+    <tr><td>decimal</td> <td>numeric</td> <td>not yet supported</td></tr>
+    <tr><td>real</td> <td>float4</td> <td>float</td></tr>
+    <tr><td>double precision</td> <td>float8</td> <td>double</td></tr>
+    <tr><td>character varying(n)</td> <td>varchar(n)</td> <td>string</td></tr>
+    <tr><td>character(n)</td> <td>char(n)</td> <td>string</td></tr>
+    <tr><td>text</td> <td></td> <td>string</td></tr>
+    <tr><td>"char"</td> <td></td> <td>char</td></tr>
+    <tr><td>bytea</td> <td></td> <td>ubyte[]</td></tr>
+    <tr><td>timestamp without time zone</td> <td>timestamp</td> <td>DateTime</td></tr>
+    <tr><td>timestamp with time zone</td> <td>timestamptz</td> <td>SysTime</td></tr>
+    <tr><td>date</td> <td></td> <td>Date</td></tr>
+    <tr><td>time without time zone</td> <td>time</td> <td>TimeOfDay</td></tr>
+    <tr><td>time with time zone</td> <td>timetz</td> <td>SysTime</td></tr>
+    <tr><td>interval</td> <td></td> <td>Duration (without months and years)</td></tr>
+    <tr><td>boolean</td> <td>bool</td> <td>bool</td></tr>
+    <tr><td>enums</td> <td></td> <td>string</td> <td>enum</td></tr>
+    <tr><td>arrays</td> <td></td> <td>Variant[]</td> <td>dynamic/static array with compatible element type</td></tr>
+    <tr><td>composites</td> <td>record, row</td> <td>Variant[]</td> <td>dynamic/static array, struct or Tuple</td></tr>
+</table>
+</p>
+</section>
+<section><h2>Examples</h2>
+<p>with vibe.d use -version=Have_vibe_d_core and use a ConnectionPool (PostgresDB Object &amp; lockConnection)
+</p>
+<pre class="code"><code class="lang-d"><span class="pln">
+</span><span class="kwd">auto </span><span class="pln">pdb </span><span class="pun">= </span><span class="kwd">new </span><span class="typ">PostgresDB</span><span class="pun">([
+    </span><span class="str">"host" </span><span class="pun">: </span><span class="str">"192.168.2.50"</span><span class="pun">,
+    </span><span class="str">"database" </span><span class="pun">: </span><span class="str">"postgres"</span><span class="pun">,
+    </span><span class="str">"user" </span><span class="pun">: </span><span class="str">"postgres"</span><span class="pun">,
+    </span><span class="str">"password" </span><span class="pun">: </span><span class="str">""
+</span><span class="pun">]);
+</span><span class="kwd">auto </span><span class="pln">conn </span><span class="pun">= </span><span class="pln">pdb<wbr/></span><span class="pun">.</span><span class="pln">lockConnection</span><span class="pun">();
+
+</span><span class="kwd">auto </span><span class="pln">cmd </span><span class="pun">= </span><span class="kwd">new </span><span class="typ">PGCommand</span><span class="pun">(</span><span class="pln">conn</span><span class="pun">, </span><span class="str">"SELECT typname, typlen FROM pg_type"</span><span class="pun">);
+</span><span class="kwd">auto </span><span class="pln">result </span><span class="pun">= </span><span class="pln">cmd<wbr/></span><span class="pun">.</span><span class="pln">executeQuery</span><span class="pun">;
+</span><span class="kwd">scope</span><span class="pun">(</span><span class="pln">exit</span><span class="pun">) </span><span class="pln">result<wbr/></span><span class="pun">.</span><span class="pln">destroy</span><span class="pun">;
+
+</span><span class="kwd">foreach </span><span class="pun">(</span><span class="pln">row</span><span class="pun">; </span><span class="pln">result</span><span class="pun">)
+    </span><span class="pln">writeln</span><span class="pun">(</span><span class="pln">row</span><span class="pun">[</span><span class="str">"typname"</span><span class="pun">], </span><span class="str">", "</span><span class="pun">, </span><span class="pln">row</span><span class="pun">[</span><span class="lit">1</span><span class="pun">]);
+</span></code></pre>
+<p>without vibe.d you can use std sockets with PGConnection object
+</p>
+
+<pre class="code"><code class="lang-d"><span class="kwd">import </span><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">stdio</span><span class="pun">;
+</span><span class="kwd">import </span><span class="pln">ddb<wbr/></span><span class="pun">.</span><span class="pln">postgres</span><span class="pun">;
+
+</span><span class="typ">int </span><span class="pln">main</span><span class="pun">(</span><span class="typ">string</span><span class="pun">[] </span><span class="pln">argv</span><span class="pun">)
+{
+    </span><span class="kwd">auto </span><span class="pln">conn </span><span class="pun">= </span><span class="kwd">new </span><span class="typ">PGConnection</span><span class="pun">([
+        </span><span class="str">"host" </span><span class="pun">: </span><span class="str">"localhost"</span><span class="pun">,
+        </span><span class="str">"database" </span><span class="pun">: </span><span class="str">"test"</span><span class="pun">,
+        </span><span class="str">"user" </span><span class="pun">: </span><span class="str">"postgres"</span><span class="pun">,
+        </span><span class="str">"password" </span><span class="pun">: </span><span class="str">"postgres"
+    </span><span class="pun">]);
+
+    </span><span class="kwd">scope</span><span class="pun">(</span><span class="pln">exit</span><span class="pun">) </span><span class="pln">conn<wbr/></span><span class="pun">.</span><span class="pln">close</span><span class="pun">;
+
+    </span><span class="kwd">auto </span><span class="pln">cmd </span><span class="pun">= </span><span class="kwd">new </span><span class="typ">PGCommand</span><span class="pun">(</span><span class="pln">conn</span><span class="pun">, </span><span class="str">"SELECT typname, typlen FROM pg_type"</span><span class="pun">);
+    </span><span class="kwd">auto </span><span class="pln">result </span><span class="pun">= </span><span class="pln">cmd<wbr/></span><span class="pun">.</span><span class="pln">executeQuery</span><span class="pun">;
+    </span><span class="kwd">scope</span><span class="pun">(</span><span class="pln">exit</span><span class="pun">) </span><span class="pln">result<wbr/></span><span class="pun">.</span><span class="pln">destroy</span><span class="pun">;
+
+    </span><span class="kwd">foreach </span><span class="pun">(</span><span class="pln">row</span><span class="pun">; </span><span class="pln">result</span><span class="pun">)
+        </span><span class="pln">writeln</span><span class="pun">(</span><span class="pln">row</span><span class="pun">[</span><span class="lit">0</span><span class="pun">], </span><span class="str">", "</span><span class="pun">, </span><span class="pln">row</span><span class="pun">[</span><span class="lit">1</span><span class="pun">]);
+
+    </span><span class="kwd">return </span><span class="lit">0</span><span class="pun">;
+}</span></code></pre>
+</section>
+</section>
+			<section>
+				<h2>Authors</h2>
+<p>Piotr Szturmaj
+</p>
+
+			</section>
+			<section>
+				<h2>Copyright</h2>
+<p>Copyright Piotr Szturmaj 2011-.
+</p>
+
+			</section>
+			<section>
+				<h2>License</h2>
+<p><a href="http://boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
+</p>
+
+			</section>
+		</div>
+	</body>
+</html>

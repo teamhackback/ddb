@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Struct DBRow</title>
+		<link rel="stylesheet" type="text/css" href="../../styles/ddox.css"/>
+		<link rel="stylesheet" href="../../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../../scripts/jquery.js">/**/</script>
+		<script type="text/javascript" src="../../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+						<ul class="tree-view">
+							<li class="tree-view">
+								<a href="#" class="package">ddb</a>
+						<ul class="tree-view">
+							<li class="collapsed tree-view">
+								<a href="#" class="package">pg</a>
+						<ul class="tree-view">
+							<li>
+								<a href="../../ddb/pg.html" class=" module">Package members</a>
+							</li>
+							<li>
+								<a href="../../ddb/pg/command.html" class=" module">command</a>
+							</li>
+							<li>
+								<a href="../../ddb/pg/connection.html" class=" module">connection</a>
+							</li>
+							<li>
+								<a href="../../ddb/pg/exceptions.html" class=" module">exceptions</a>
+							</li>
+							<li>
+								<a href="../../ddb/pg/parameters.html" class=" module">parameters</a>
+							</li>
+							<li>
+								<a href="../../ddb/pg/resultset.html" class=" module">resultset</a>
+							</li>
+							<li>
+								<a href="../../ddb/pg/stream.html" class=" module">stream</a>
+							</li>
+							<li>
+								<a href="../../ddb/pg/types.html" class=" module">types</a>
+							</li>
+						</ul>
+							</li>
+							<li>
+								<a href="../../ddb/db.html" class="selected module">db</a>
+							</li>
+						</ul>
+							</li>
+						</ul>
+				<noscript>
+					<p style="color: red">The search functionality needs JavaScript enabled</p>
+				</noscript>
+				<div id="symbolSearchPane" style="display: none">
+					<p>
+						<input id="symbolSearch" type="text" placeholder="Search for symbols" onchange="performSymbolSearch(24);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+					</p>
+	<ul id="symbolSearchResults" style="display: none"></ul>
+	<script type="application/javascript" src="../../symbols.js"></script>
+	<script type="application/javascript">
+var symbolSearchRootDir = "../../";
+$('#symbolSearchPane').show();
+	</script>
+				</div>
+		</nav>
+		<div id="main-contents">
+			<h1>Struct DBRow</h1>
+			<section>
+				<p>Data row returned from database servers.
+</p>
+<section><p>DBRow may be instantiated with any number of arguments. It subtypes base type which
+depends on that number:
+</p>
+
+<p><table>    <tr><th>Number of arguments</th> <th>Base type</th></tr>
+    <tr><td>0</td> <td>Variant[]
+    It is default dynamic row, which can handle arbitrary number of columns and any of their types.
+    </td></tr>
+    <tr><td>1</td> <td>Specs itself, more precisely Specs[0]
+</p>
+<pre class="code"><code class="lang-d"><span class="kwd">struct </span><span class="pln">S </span><span class="pun">{ </span><span class="typ">int </span><span class="pln">i</span><span class="pun">, </span><span class="typ">float </span><span class="pln">f </span><span class="pun">}
+</span><span class="typ">DBRow</span><span class="pun">!</span><span class="typ">int </span><span class="pln">rowInt</span><span class="pun">;
+</span><span class="typ">DBRow</span><span class="pun">!</span><span class="pln">S rowS</span><span class="pun">;
+</span><span class="typ">DBRow</span><span class="pun">!(</span><span class="typ">Tuple</span><span class="pun">!(</span><span class="typ">string</span><span class="pun">, </span><span class="typ">bool</span><span class="pun">)) </span><span class="pln">rowTuple</span><span class="pun">;
+</span><span class="typ">DBRow</span><span class="pun">!(</span><span class="typ">int</span><span class="pun">[</span><span class="lit">10</span><span class="pun">]) </span><span class="pln">rowSA</span><span class="pun">;
+</span><span class="typ">DBRow</span><span class="pun">!(</span><span class="typ">bool</span><span class="pun">[]) </span><span class="pln">rowDA</span><span class="pun">;</span></code></pre>
+<p>    </td></tr>
+    <tr><td>&gt;= 2</td> <td>Tuple!Specs
+</p>
+<pre class="code"><code class="lang-d"><span class="typ">DBRow</span><span class="pun">!(</span><span class="typ">int</span><span class="pun">, </span><span class="typ">string</span><span class="pun">) </span><span class="pln">row1</span><span class="pun">; </span><span class="com">// two arguments
+</span><span class="typ">DBRow</span><span class="pun">!(</span><span class="typ">int</span><span class="pun">, </span><span class="str">"i"</span><span class="pun">) </span><span class="pln">row2</span><span class="pun">; </span><span class="com">// two arguments</span></code></pre>
+<p>    </td></tr>
+</table>
+</p>
+
+<p>If there is only one argument, the semantics depend on its type:
+</p>
+
+<p><table>    <tr><th>Type</th> <th>Semantics</th></tr>
+    <tr><td>base type, such as int</td> <td>Row contains only one column of that type</td></tr>
+    <tr><td>struct</td> <td>Row columns are mapped to fields of the struct in the same order</td></tr>
+    <tr><td>Tuple</td> <td>Row columns are mapped to tuple fields in the same order</td></tr>
+    <tr><td>static array</td> <td>Row columns are mapped to array items, they share the same type</td></tr>
+    <tr><td>dynamic array</td> <td>Same as static array, except that column count may change during runtime</td></tr>
+</table>
+</p>
+</section>
+
+					<section>
+						<h3>Template arguments</h3>
+						<div class="prototype">
+							<code class="lang-d"><span class="kwd">struct</span> <span class="typ">DBRow</span><span class="pun">(</span><span class="typ">Specs</span><span class="pun">...)</span>;
+							</code>
+						</div>
+					</section>
+<section><h3>Note</h3>
+<p>String types are treated as base types.
+</p>
+
+<p>There is an exception for RDBMSes which are capable of returning arrays and/or composite types. If such a
+database server returns array or composite in one column it may be mapped to DBRow as if it was many columns.
+For example:
+</p>
+<pre class="code"><code class="lang-d"><span class="kwd">struct </span><span class="pln">S </span><span class="pun">{ </span><span class="typ">string </span><span class="pln">field1</span><span class="pun">; </span><span class="typ">int </span><span class="pln">field2</span><span class="pun">; }
+</span><span class="typ">DBRow</span><span class="pun">!</span><span class="pln">S row</span><span class="pun">;</span></code></pre>
+<p>In this case row may handle result that either:
+<ul>    <li>has two columns convertible to respectively, string and int</li>
+    <li>has one column with composite type compatible with S</li>
+</ul>
+</p>
+
+<p>DBRow's instantiated with dynamic array (and thus default Variant[]) provide additional bracket syntax
+for accessing fields:
+</p>
+<pre class="code"><code class="lang-d"><span class="kwd">auto </span><span class="pln">value </span><span class="pun">= </span><span class="pln">row</span><span class="pun">[</span><span class="str">"columnName"</span><span class="pun">];</span></code></pre>
+<p>There are cases when result contains duplicate column names. Normally column name inside brackets refers
+to the first column of that name. To access other columns with that name, use additional index parameter:
+</p>
+<pre class="code"><code class="lang-d"><span class="kwd">auto </span><span class="pln">value </span><span class="pun">= </span><span class="pln">row</span><span class="pun">[</span><span class="str">"columnName"</span><span class="pun">, </span><span class="lit">1</span><span class="pun">]; </span><span class="com">// second column named "columnName"
+
+</span><span class="kwd">auto </span><span class="pln">value </span><span class="pun">= </span><span class="pln">row</span><span class="pun">[</span><span class="str">"columnName"</span><span class="pun">, </span><span class="lit">0</span><span class="pun">]; </span><span class="com">// first column named "columnName"
+</span><span class="kwd">auto </span><span class="pln">value </span><span class="pun">= </span><span class="pln">row</span><span class="pun">[</span><span class="str">"columnName"</span><span class="pun">]; </span><span class="com">// same as above</span></code></pre>
+</section>
+<section><h3>Examples</h3>
+<p>Default untyped (dynamic) DBRow:
+</p>
+<pre class="code"><code class="lang-d"><span class="typ">DBRow</span><span class="pun">!() </span><span class="pln">row1</span><span class="pun">;
+</span><span class="typ">DBRow</span><span class="pun">!(</span><span class="typ">Variant</span><span class="pun">[]) </span><span class="pln">row2</span><span class="pun">;
+
+</span><span class="kwd">assert</span><span class="pun">(</span><span class="kwd">is</span><span class="pun">(</span><span class="kwd">typeof</span><span class="pun">(</span><span class="pln">row1<wbr/></span><span class="pun">.</span><span class="pln">base </span><span class="pun">== </span><span class="pln">row2<wbr/></span><span class="pun">.</span><span class="pln">base</span><span class="pun">)));
+
+</span><span class="kwd">auto </span><span class="pln">cmd </span><span class="pun">= </span><span class="kwd">new </span><span class="typ">PGCommand</span><span class="pun">(</span><span class="pln">conn</span><span class="pun">, </span><span class="str">"SElECT typname, typlen FROM pg_type"</span><span class="pun">);
+</span><span class="kwd">auto </span><span class="pln">result </span><span class="pun">= </span><span class="pln">cmd<wbr/></span><span class="pun">.</span><span class="pln">executeQuery</span><span class="pun">;
+
+</span><span class="kwd">foreach </span><span class="pun">(</span><span class="pln">i</span><span class="pun">, </span><span class="pln">row</span><span class="pun">; </span><span class="pln">result</span><span class="pun">)
+{
+    </span><span class="pln">writeln</span><span class="pun">(</span><span class="pln">i</span><span class="pun">, </span><span class="str">" - "</span><span class="pun">, </span><span class="pln">row</span><span class="pun">[</span><span class="str">"typname"</span><span class="pun">], </span><span class="str">", "</span><span class="pun">, </span><span class="pln">row</span><span class="pun">[</span><span class="str">"typlen"</span><span class="pun">]);
+}
+
+</span><span class="pln">result<wbr/></span><span class="pun">.</span><span class="pln">close</span><span class="pun">;</span></code></pre>
+<p>DBRow with only one field:
+</p>
+<pre class="code"><code class="lang-d"><span class="typ">DBRow</span><span class="pun">!</span><span class="typ">int </span><span class="pln">row</span><span class="pun">;
+</span><span class="pln">row </span><span class="pun">= </span><span class="lit">10</span><span class="pun">;
+</span><span class="pln">row </span><span class="pun">+= </span><span class="lit">1</span><span class="pun">;
+</span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">row </span><span class="pun">== </span><span class="lit">11</span><span class="pun">);
+
+</span><span class="typ">DBRow</span><span class="pun">!</span><span class="typ">Variant </span><span class="pln">untypedRow</span><span class="pun">;
+</span><span class="pln">untypedRow </span><span class="pun">= </span><span class="lit">10</span><span class="pun">;</span></code></pre>
+<p>DBRow with more than one field:
+</p>
+<pre class="code"><code class="lang-d"><span class="kwd">struct </span><span class="pln">S </span><span class="pun">{ </span><span class="typ">int </span><span class="pln">i</span><span class="pun">; </span><span class="typ">string </span><span class="pln">s</span><span class="pun">; }
+</span><span class="kwd">alias </span><span class="typ">Tuple</span><span class="pun">!(</span><span class="typ">int</span><span class="pun">, </span><span class="str">"i"</span><span class="pun">, </span><span class="typ">string</span><span class="pun">, </span><span class="str">"s"</span><span class="pun">) </span><span class="pln">TS</span><span class="pun">;
+
+</span><span class="com">// all three rows are compatible
+</span><span class="typ">DBRow</span><span class="pun">!</span><span class="pln">S row1</span><span class="pun">;
+</span><span class="typ">DBRow</span><span class="pun">!</span><span class="pln">TS row2</span><span class="pun">;
+</span><span class="typ">DBRow</span><span class="pun">!(</span><span class="typ">int</span><span class="pun">, </span><span class="str">"i"</span><span class="pun">, </span><span class="typ">string</span><span class="pun">, </span><span class="str">"s"</span><span class="pun">) </span><span class="pln">row3</span><span class="pun">;
+
+</span><span class="pln">row1<wbr/></span><span class="pun">.</span><span class="pln">i </span><span class="pun">= </span><span class="pln">row2<wbr/></span><span class="pun">.</span><span class="pln">i </span><span class="pun">= </span><span class="pln">row3<wbr/></span><span class="pun">.</span><span class="pln">i </span><span class="pun">= </span><span class="lit">10</span><span class="pun">;
+</span><span class="pln">row1<wbr/></span><span class="pun">.</span><span class="pln">s </span><span class="pun">= </span><span class="pln">row2<wbr/></span><span class="pun">.</span><span class="pln">s </span><span class="pun">= </span><span class="pln">row3<wbr/></span><span class="pun">.</span><span class="pln">s </span><span class="pun">= </span><span class="str">"abc"</span><span class="pun">;
+
+</span><span class="com">// these two rows are also compatible
+</span><span class="typ">DBRow</span><span class="pun">!(</span><span class="typ">int</span><span class="pun">, </span><span class="typ">int</span><span class="pun">) </span><span class="pln">row4</span><span class="pun">;
+</span><span class="typ">DBRow</span><span class="pun">!(</span><span class="typ">int</span><span class="pun">[</span><span class="lit">2</span><span class="pun">]) </span><span class="pln">row5</span><span class="pun">;
+
+</span><span class="pln">row4</span><span class="pun">[</span><span class="lit">0</span><span class="pun">] = </span><span class="pln">row5</span><span class="pun">[</span><span class="lit">0</span><span class="pun">] = </span><span class="lit">10</span><span class="pun">;
+</span><span class="pln">row4</span><span class="pun">[</span><span class="lit">1</span><span class="pun">] = </span><span class="pln">row5</span><span class="pun">[</span><span class="lit">1</span><span class="pun">] = </span><span class="lit">20</span><span class="pun">;</span></code></pre>
+<p>Advanced example:
+</p>
+<pre class="code"><code class="lang-d"><span class="kwd">enum </span><span class="typ">Axis </span><span class="pun">{ </span><span class="pln">x</span><span class="pun">, </span><span class="pln">y</span><span class="pun">, </span><span class="pln">z </span><span class="pun">}
+</span><span class="kwd">struct </span><span class="typ">SubRow1 </span><span class="pun">{ </span><span class="typ">string </span><span class="pln">s</span><span class="pun">; </span><span class="typ">int</span><span class="pun">[] </span><span class="pln">nums</span><span class="pun">; </span><span class="typ">int </span><span class="pln">num</span><span class="pun">; }
+</span><span class="kwd">alias </span><span class="typ">Tuple</span><span class="pun">!(</span><span class="typ">int</span><span class="pun">, </span><span class="str">"num"</span><span class="pun">, </span><span class="typ">string</span><span class="pun">, </span><span class="str">"s"</span><span class="pun">) </span><span class="typ">SubRow2</span><span class="pun">;
+</span><span class="kwd">struct </span><span class="typ">Row </span><span class="pun">{ </span><span class="typ">SubRow1 </span><span class="pln">left</span><span class="pun">; </span><span class="typ">SubRow2</span><span class="pun">[] </span><span class="pln">right</span><span class="pun">; </span><span class="typ">Axis </span><span class="pln">axis</span><span class="pun">; </span><span class="typ">string </span><span class="pln">text</span><span class="pun">; }
+
+</span><span class="kwd">auto </span><span class="pln">cmd </span><span class="pun">= </span><span class="kwd">new </span><span class="typ">PGCommand</span><span class="pun">(</span><span class="pln">conn</span><span class="pun">, </span><span class="str">"SELECT ROW('text', ARRAY[1, 2, 3], 100),
+                                ARRAY[ROW(1, 'str'), ROW(2, 'aab')], 'x', 'anotherText'"</span><span class="pun">);
+
+</span><span class="kwd">auto </span><span class="pln">row </span><span class="pun">= </span><span class="pln">cmd<wbr/></span><span class="pun">.</span><span class="pln">executeRow</span><span class="pun">!</span><span class="typ">Row</span><span class="pun">;
+
+</span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">row<wbr/></span><span class="pun">.</span><span class="pln">left<wbr/></span><span class="pun">.</span><span class="pln">s </span><span class="pun">== </span><span class="str">"text"</span><span class="pun">);
+</span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">row<wbr/></span><span class="pun">.</span><span class="pln">left<wbr/></span><span class="pun">.</span><span class="pln">nums </span><span class="pun">== [</span><span class="lit">1</span><span class="pun">, </span><span class="lit">2</span><span class="pun">, </span><span class="lit">3</span><span class="pun">]);
+</span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">row<wbr/></span><span class="pun">.</span><span class="pln">left<wbr/></span><span class="pun">.</span><span class="pln">num </span><span class="pun">== </span><span class="lit">100</span><span class="pun">);
+</span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">row<wbr/></span><span class="pun">.</span><span class="pln">right</span><span class="pun">[</span><span class="lit">0</span><span class="pun">]<wbr/>.</span><span class="pln">num </span><span class="pun">== </span><span class="lit">1 </span><span class="pun">&amp;&amp; </span><span class="pln">row<wbr/></span><span class="pun">.</span><span class="pln">right</span><span class="pun">[</span><span class="lit">0</span><span class="pun">]<wbr/>.</span><span class="pln">s </span><span class="pun">== </span><span class="str">"str"</span><span class="pun">);
+</span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">row<wbr/></span><span class="pun">.</span><span class="pln">right</span><span class="pun">[</span><span class="lit">1</span><span class="pun">]<wbr/>.</span><span class="pln">num </span><span class="pun">== </span><span class="lit">2 </span><span class="pun">&amp;&amp; </span><span class="pln">row<wbr/></span><span class="pun">.</span><span class="pln">right</span><span class="pun">[</span><span class="lit">1</span><span class="pun">]<wbr/>.</span><span class="pln">s </span><span class="pun">== </span><span class="str">"aab"</span><span class="pun">);
+</span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">row<wbr/></span><span class="pun">.</span><span class="pln">axis </span><span class="pun">== </span><span class="typ">Axis<wbr/></span><span class="pun">.</span><span class="pln">x</span><span class="pun">);
+</span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">row<wbr/></span><span class="pun">.</span><span class="pln">s </span><span class="pun">== </span><span class="str">"anotherText"</span><span class="pun">);</span></code></pre>
+</section>
+
+			</section>
+			<section>
+				<h2>Authors</h2>
+<p>Piotr Szturmaj
+</p>
+
+			</section>
+			<section>
+				<h2>Copyright</h2>
+<p>Copyright Piotr Szturmaj 2011-.
+</p>
+
+			</section>
+			<section>
+				<h2>License</h2>
+<p><a href="http://boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
+</p>
+
+			</section>
+		</div>
+	</body>
+</html>

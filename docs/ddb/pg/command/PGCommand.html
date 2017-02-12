@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Class PGCommand</title>
+		<link rel="stylesheet" type="text/css" href="../../../styles/ddox.css"/>
+		<link rel="stylesheet" href="../../../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../../../scripts/jquery.js">/**/</script>
+		<script type="text/javascript" src="../../../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+						<ul class="tree-view">
+							<li class="tree-view">
+								<a href="#" class="package">ddb</a>
+						<ul class="tree-view">
+							<li class="tree-view">
+								<a href="#" class="package">pg</a>
+						<ul class="tree-view">
+							<li>
+								<a href="../../../ddb/pg.html" class=" module">Package members</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/command.html" class="selected module">command</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/connection.html" class=" module">connection</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/exceptions.html" class=" module">exceptions</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/parameters.html" class=" module">parameters</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/resultset.html" class=" module">resultset</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/stream.html" class=" module">stream</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/types.html" class=" module">types</a>
+							</li>
+						</ul>
+							</li>
+							<li>
+								<a href="../../../ddb/db.html" class=" module">db</a>
+							</li>
+						</ul>
+							</li>
+						</ul>
+				<noscript>
+					<p style="color: red">The search functionality needs JavaScript enabled</p>
+				</noscript>
+				<div id="symbolSearchPane" style="display: none">
+					<p>
+						<input id="symbolSearch" type="text" placeholder="Search for symbols" onchange="performSymbolSearch(24);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+					</p>
+	<ul id="symbolSearchResults" style="display: none"></ul>
+	<script type="application/javascript" src="../../../symbols.js"></script>
+	<script type="application/javascript">
+var symbolSearchRootDir = "../../../";
+$('#symbolSearchPane').show();
+	</script>
+				</div>
+		</nav>
+		<div id="main-contents">
+			<h1>Class PGCommand</h1>
+			<section>
+				<p>Class encapsulating prepared or non-prepared statements (commands).
+</p>
+
+					<section>
+						<h3>Inherits from</h3>
+						<ul>
+							<li>
+								<code class="prettyprint lang-d"><span class="typ">Object</span></code>
+ (base class)
+							</li>
+						</ul>
+					</section>
+					<section>
+						<h3>Properties</h3>
+						<table>
+							<col class="caption"/>
+							<tr>
+								<th>Name</th>
+								<th>Type</th>
+								<th>Description</th>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.fields.html" class="public property"><code>fields</code></a>
+									<span class="tableEntryAnnotation">[get]</span>
+								</td>
+								<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">immutable</span><span class="pun">(</span><a href="../../../ddb/pg/types/PGField.html"><span class="typ">PGField</span></a><span class="pun">)</span><span class="pun">[]</span></code></td>
+								<td>List of fields that will be returned from the server. Available after successful call to bind().
+</td>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.isPrepared.html" class="public property"><code>isPrepared</code></a>
+									<span class="tableEntryAnnotation">[get]</span>
+								</td>
+								<td class="typecol"><code class="prettyprint lang-d"><span class="typ">bool</span></code></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.isQuery.html" class="public property"><code>isQuery</code></a>
+									<span class="tableEntryAnnotation">[get]</span>
+								</td>
+								<td class="typecol"><code class="prettyprint lang-d"><span class="typ">bool</span></code></td>
+								<td>Checks if this is query or non query command. Available after successful call to bind().
+</td>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.lastInsertOid.html" class="public property"><code>lastInsertOid</code></a>
+									<span class="tableEntryAnnotation">[get]</span>
+								</td>
+								<td class="typecol"><code class="prettyprint lang-d"><span class="typ">uint</span></code></td>
+								<td>If table is with OIDs, it contains last inserted OID.
+</td>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.parameters.html" class="public property"><code>parameters</code></a>
+									<span class="tableEntryAnnotation">[get]</span>
+								</td>
+								<td class="typecol"><code class="prettyprint lang-d"><a href="../../../ddb/pg/parameters/PGParameters.html"><span class="typ">PGParameters</span></a></code></td>
+								<td>List of parameters bound to this command
+</td>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.query.html" class="public property"><code>query</code></a>
+									<span class="tableEntryAnnotation">[get, set]</span>
+								</td>
+								<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td>
+								<td>Query assigned to this command.
+</td>
+							</tr>
+						</table>
+					</section>
+					<section>
+						<h3>Methods</h3>
+						<table>
+							<col class="caption"/>
+							<tr>
+								<th>Name</th>
+								<th>Description</th>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.bind.html" class="public">
+										<code>bind</code>
+									</a>
+								</td>
+								<td>Binds values to parameters and updates list of returned fields.
+</td>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.execute.html" class="public">
+										<code>execute</code>
+									</a>
+								</td>
+								<td>Executes a non query command, i.e. query which doesn't return any rows. Commonly used with
+    data manipulation commands, such as INSERT, UPDATE and DELETE.
+</td>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.executeQuery.html" class="public">
+										<code>executeQuery</code>
+									</a>
+								</td>
+								<td>Executes query which returns row sets, such as SELECT command.
+</td>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.executeRow.html" class="public">
+										<code>executeRow</code>
+									</a>
+								</td>
+								<td>Executes query and returns only first row of the result.
+</td>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.executeScalar.html" class="public">
+										<code>executeScalar</code>
+									</a>
+								</td>
+								<td>Executes query returning exactly one row and field. By default, returns Variant type.
+</td>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.prepare.html" class="public">
+										<code>prepare</code>
+									</a>
+								</td>
+								<td>Prepare this statement, i.e. cache query plan.
+</td>
+							</tr>
+							<tr>
+								<td>
+									<a href="../../../ddb/pg/command/PGCommand.unprepare.html" class="public">
+										<code>unprepare</code>
+									</a>
+								</td>
+								<td>Unprepare this statement. Goes back to normal query planning.
+</td>
+							</tr>
+						</table>
+					</section>
+
+			</section>
+			<section>
+				<h2>Authors</h2>
+
+			</section>
+			<section>
+				<h2>Copyright</h2>
+
+			</section>
+			<section>
+				<h2>License</h2>
+
+			</section>
+		</div>
+	</body>
+</html>

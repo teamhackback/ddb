@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Function PGConnection.this</title>
+		<link rel="stylesheet" type="text/css" href="../../../styles/ddox.css"/>
+		<link rel="stylesheet" href="../../../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../../../scripts/jquery.js">/**/</script>
+		<script type="text/javascript" src="../../../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+						<ul class="tree-view">
+							<li class="tree-view">
+								<a href="#" class="package">ddb</a>
+						<ul class="tree-view">
+							<li class="tree-view">
+								<a href="#" class="package">pg</a>
+						<ul class="tree-view">
+							<li>
+								<a href="../../../ddb/pg.html" class=" module">Package members</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/command.html" class=" module">command</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/connection.html" class="selected module">connection</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/exceptions.html" class=" module">exceptions</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/parameters.html" class=" module">parameters</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/resultset.html" class=" module">resultset</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/stream.html" class=" module">stream</a>
+							</li>
+							<li>
+								<a href="../../../ddb/pg/types.html" class=" module">types</a>
+							</li>
+						</ul>
+							</li>
+							<li>
+								<a href="../../../ddb/db.html" class=" module">db</a>
+							</li>
+						</ul>
+							</li>
+						</ul>
+				<noscript>
+					<p style="color: red">The search functionality needs JavaScript enabled</p>
+				</noscript>
+				<div id="symbolSearchPane" style="display: none">
+					<p>
+						<input id="symbolSearch" type="text" placeholder="Search for symbols" onchange="performSymbolSearch(24);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+					</p>
+	<ul id="symbolSearchResults" style="display: none"></ul>
+	<script type="application/javascript" src="../../../symbols.js"></script>
+	<script type="application/javascript">
+var symbolSearchRootDir = "../../../";
+$('#symbolSearchPane').show();
+	</script>
+				</div>
+		</nav>
+		<div id="main-contents">
+			<h1>Function PGConnection.this</h1>
+			<section>
+				<p>Opens connection to server.
+</p>
+<section></section>
+
+					<section>
+						<h3>Prototype</h3>
+						<div class="prototype">
+							<code class="lang-d">
+<span class="pln">this</span><span class="pun">(</span>
+								<br/>
+&nbsp;&nbsp;<span class="kwd">const</span><span class="pun">(</span><span class="typ">string</span><span class="pun">[</span><span class="typ">string</span><span class="pun">]</span><span class="pun">)</span> <span class="pln">params</span>
+								<br/>
+<span class="pun">)</span><span class="pln"> </span><span class="kwd">@safe</span><span class="pun">;</span>
+							</code>
+						</div>
+					</section>
+<section><h3>Parameters</h3>
+<table><col class="caption"><tr><th>Name</th><th>Description</th></tr>
+<tr><td id="params">params</td><td> Associative array of string keys and values.
+
+        Currently recognized parameters are:
+        <ul>            <li>host - Host name or IP address of the server. Required.</li>
+            <li>port - Port number of the server. Defaults to 5432.</li>
+            <li>user - The database user. Required.</li>
+            <li>database - The database to connect to. Defaults to the user name.</li>
+            <li>options - Command-line arguments for the backend. (This is deprecated in favor of setting individual run-time parameters.)</li>
+        </ul>
+
+        In addition to the above, any run-time parameter that can be set at backend start time might be listed.
+        Such settings will be applied during backend start (after parsing the command-line options if any).
+        The values will act as session defaults.</td></tr>
+</table>
+</section>
+<section><h3>Examples</h3>
+<pre class="code"><code class="lang-d"><span class="kwd">auto </span><span class="pln">conn </span><span class="pun">= </span><span class="kwd">new <a href="../../../ddb/pg/connection/PGConnection.html"></span><span class="typ">PGConnection</span></a><span class="pun">([
+    </span><span class="str">"host" </span><span class="pun">: </span><span class="str">"localhost"</span><span class="pun">,
+    </span><span class="str">"database" </span><span class="pun">: </span><span class="str">"test"</span><span class="pun">,
+    </span><span class="str">"user" </span><span class="pun">: </span><span class="str">"postgres"</span><span class="pun">,
+    </span><span class="str">"password" </span><span class="pun">: </span><span class="str">"postgres"
+</span><span class="pun">]);</span></code></pre>
+</section>
+
+			</section>
+			<section>
+				<h2>Authors</h2>
+
+			</section>
+			<section>
+				<h2>Copyright</h2>
+
+			</section>
+			<section>
+				<h2>License</h2>
+
+			</section>
+		</div>
+	</body>
+</html>
