@@ -1,3 +1,6 @@
+/**
+Connection to the PostgreSQL server.
+*/
 module ddb.pg.connection;
 
 import std.bitmanip : bigEndianToNative;

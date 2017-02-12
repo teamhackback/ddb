@@ -1,3 +1,4 @@
+///
 module ddb.pg.exceptions;
 
 import ddb.pg.messages : ResponseMessage;

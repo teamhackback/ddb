@@ -1,3 +1,4 @@
+///
 module ddb.pg.stream;
 
 import std.bitmanip : nativeToBigEndian;

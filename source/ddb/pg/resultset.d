@@ -1,3 +1,4 @@
+///
 module ddb.pg.resultset;
 
 import ddb.db : DBRow;

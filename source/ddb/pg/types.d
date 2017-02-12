@@ -1,3 +1,4 @@
+///
 module ddb.pg.types;
 
 import std.datetime;

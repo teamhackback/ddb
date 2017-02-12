@@ -1,3 +1,6 @@
+/**
+Prepared commands.
+*/
 module ddb.pg.command;
 
 import std.exception : enforce;
