@@ -4,7 +4,7 @@
     "sourceFiles": ["source.d"],
     "targetType": "executable",
     "dependencies": {
-        "ddb": {"path": ".."},
+        "hb-ddb": {"path": ".."},
         "vibe-core": {"version": "1.0.0" }
     }
 }
