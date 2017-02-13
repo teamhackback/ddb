@@ -9,8 +9,18 @@ import ddb.pg.types : PGFields;
 
 @safe:
 
-import vibe.internal.freelistref : FreeListRef;
-alias PGResultSet(Specs...) = FreeListRef!(PGResultSetImpl!Specs);
+version(Have_vibe_core) {
+    import vibe.internal.freelistref : FreeListRef;
+    alias PGResultSet(Specs...) = FreeListRef!(PGResultSetImpl!Specs);
+} else {
+    class PGResultSet(Specs...)
+    {
+	    static FreeListRef opCall(ARGS...)(ARGS args)
+	    {
+            return new PGResultSetImpl(args);
+	    }
+    }
+}
 
 /// Input range of DBRow!Specs
 class PGResultSetImpl(Specs...)
