@@ -16,7 +16,7 @@ class ParamException : Exception
 }
 
 /// Exception thrown on server error
-class ServerErrorException: Exception
+class PGServerErrorException: Exception
 {
     /// Contains information about this _error. Aliased to this.
     ResponseMessage error;

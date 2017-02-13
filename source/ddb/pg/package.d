@@ -138,60 +138,8 @@ OR MODIFICATIONS.
 module ddb.pg;
 
 public import ddb.db;
+public import ddb.pg.client;
 public import ddb.pg.command : PGCommand;
 public import ddb.pg.connection : PGConnection;
 public import ddb.pg.exceptions;
 public import ddb.pg.types;
-
-@safe:
-
-class PostgresDB
-{
-version(Have_vibe_core)
-{
-    import vibe.core.connectionpool : ConnectionPool;
-    import ddb.pg.connection : PGConnection;
-
-    private {
-        const string[string] m_params;
-        ConnectionPool!PGConnection m_pool;
-    }
-
-    this(string[string] conn_params)
-    {
-        m_params = conn_params.dup;
-        m_pool = new ConnectionPool!PGConnection(&createConnection);
-
-        // force a connection to cause an exception for wrong URLs
-        lockConnection();
-    }
-
-    auto lockConnection() { return m_pool.lockConnection(); }
-
-    private PGConnection createConnection()
-    {
-        return new PGConnection(m_params);
-    }
-
-    @property void maxConcurrency(uint val) @trusted { m_pool.maxConcurrency = val; }
-    @property uint maxConcurrency() @trusted { return m_pool.maxConcurrency; }
-}
-else
-{
-    this(string[string] conn_params)
-    {
-        static assert(false,
-                        "The 'PostgresDB' connection pool requires Vibe.d and therefore "~
-                        "must be used with -version=Have_vibe_core"
-                     );
-    }
-
-    PGConnection lockConnection() {
-        string[string] dummy;
-        return new PGConnection(dummy);
-    }
-
-    @property void maxConcurrency(uint val) @trusted {  }
-    @property uint maxConcurrency() @trusted { return 0; }
-}
-}

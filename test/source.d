@@ -1,13 +1,18 @@
+//import ddb.pg.subscriber : PGSubscriber;
+//PGSubscriber subscriber;
+
 @safe:
 void runTest() @safe
 {
-    import ddb.pg : PostgresDB, PGCommand;
+    import ddb.pg : connectPG , PGCommand;
     import std.process : environment;
     import std.stdio;
     import vibe.core.log;
+    import vibe.core.core : runTask;
     setLogLevel(LogLevel.debug_);
+    //setLogLevel(LogLevel.trace);
 
-    auto pdb = new PostgresDB([
+    auto pdb = connectPG([
         "host" : environment.get("DB_HOST", "localhost"),
         "database" : environment["DB_NAME"],
         "user" : environment["DB_USER"],
@@ -39,8 +44,25 @@ void runTest() @safe
             writeln(row);
     });
 
-    conn.query("LISTEN foo");
-    conn.execute("NOTIFY foo, 'bar'");
+	auto subscriber = pdb.createSubscriber();
+
+    subscriber.subscribe("test1", "test2");
+    auto task = subscriber.listen((string channel, string message) {
+        writefln("channel: %s, msg: %s", channel, message);
+    });
+
+    conn.publish("test1", "Hello World!");
+    conn.publish("test2", "Hello from Channel 2");
+
+    runTask({
+        subscriber.subscribe("test-fiber");
+        subscriber.publish("test-fiber", "Hello from the Fiber!");
+        subscriber.unsubscribe();
+    });
+
+    import vibe.core.core : sleep;
+    import std.datetime : msecs;
+	sleep(100.msecs);
 }
 
 int main()

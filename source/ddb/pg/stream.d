@@ -25,6 +25,10 @@ class PGStream
         {
             m_socket = socket;
         }
+
+        @property TCPConnection conn() { return m_socket; }
+        @property void conn(TCPConnection conn) { m_socket = conn; }
+        @property void socket(TCPConnection conn) { m_socket = conn; }
     }
     else
     {

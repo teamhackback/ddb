@@ -74,7 +74,7 @@ class PGConnection
             }
         }
 
-        Message getMessage()
+        package(ddb.pg) Message getMessage()
         {
 
             char type;
@@ -244,14 +244,14 @@ class PGConnection
             stream.write(cast(int)4);
         }
 
-        void sendQueryMessage(string query)
+        package(ddb.pg) void sendQueryMessage(string query)
         {
             stream.write(PGRequestMessageTypes.Query);
             stream.write(cast(int)(4 + query.length + 1));
             stream.writeCString(query);
         }
 
-        ResponseMessage handleResponseMessage(Message msg)
+        package(ddb.pg) ResponseMessage handleResponseMessage(Message msg)
         {
             enforce(msg.data.length >= 2);
 
@@ -290,7 +290,7 @@ class PGConnection
                 case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
                     sendSyncMessage();
-                    throw new ServerErrorException(response);
+                    throw new PGServerErrorException(response);
                 case ParseComplete:
                     return;
                 default:
@@ -315,7 +315,7 @@ class PGConnection
             {
                 case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
-                    throw new ServerErrorException(response);
+                    throw new PGServerErrorException(response);
                 case CloseComplete:
                     return;
                 default:
@@ -343,7 +343,7 @@ class PGConnection
                 case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
                     sendSyncMessage();
-                    throw new ServerErrorException(response);
+                    throw new PGServerErrorException(response);
                 case BindComplete, CloseComplete:
                     goto receive;
                 case RowDescription:
@@ -375,7 +375,7 @@ class PGConnection
             {
                 case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
-                    throw new ServerErrorException(response);
+                    throw new PGServerErrorException(response);
                 case DataRow:
                     finalizeQuery();
                     throw new Exception("This query returned rows.");
@@ -510,7 +510,7 @@ class PGConnection
                     return result;
                 case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
-                    throw new ServerErrorException(response);
+                    throw new PGServerErrorException(response);
                 default:
                     // async notice, notification
                     handleAsync(msg);
@@ -526,7 +526,6 @@ class PGConnection
             {
                 case NotificationResponse:
                     int msgLength = msg.read!int;
-                    int originPid = msg.read!int;
                     string channelName = msg.readCString;
                     string payload = msg.readCString;
                     logDebug("[Async] Notification: ", channelName, ":", payload);
@@ -613,7 +612,7 @@ class PGConnection
                     if (msg.type == NoticeResponse)
                         goto receive;
 
-                    throw new ServerErrorException(response);
+                    throw new PGServerErrorException(response);
                 case AuthenticationXXXX:
                     enforce(msg.data.length >= 4);
 
@@ -727,7 +726,7 @@ class PGConnection
             {
                 case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
-                    throw new ServerErrorException(response);
+                    throw new PGServerErrorException(response);
                 case DataRow:
                     finalizeQuery();
                     throw new Exception("This query returned rows.");
@@ -806,7 +805,7 @@ class PGConnection
                     return result;
                 case ErrorResponse:
                     ResponseMessage response = handleResponseMessage(msg);
-                    throw new ServerErrorException(response);
+                    throw new PGServerErrorException(response);
                 default:
                     // async notice, notification
                     handleAsync(msg);
@@ -878,25 +877,16 @@ class PGConnection
         alias scalar = executeScalar;
 
         /**
-        Subscribes to a channel.
-        Params:
-            channel = name of the channel to subscribe
+        Sends a notification to channel with a payload
         */
-        void listen(string channel)
+        void notify(string channel, string payload)
         {
-            // TODO: register callback
-            execute("LISTEN " ~ channel);
+            // TODO: add quote escaping
+            // we can't use the `execute` interface here as it tries to read the response
+            sendQueryMessage(`NOTIFY"` ~ channel ~ `", '` ~ payload ~ `'`);
         }
 
-        /**
-        Unsubscribes from a channel.
-        Params:
-            channel = name of the channel to unsubscribe
-        */
-        void unlisten(string channel)
-        {
-           execute("UNLISTEN " ~ channel);
-        }
+        alias publish = notify;
 
         /**
         Starts a transaction.
@@ -1103,5 +1093,13 @@ class PGConnection
             reloadArrayTypes();
             reloadCompositeTypes();
             reloadEnumTypes();
+        }
+
+
+        version(Have_vibe_core)
+        {
+            import vibe.core.net : TCPConnection;
+            @property TCPConnection conn() { return stream.socket; }
+            @property void conn(TCPConnection conn) { stream.socket = conn; }
         }
 }
