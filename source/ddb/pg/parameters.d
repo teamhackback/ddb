@@ -78,7 +78,7 @@ class PGParameters
     Examples:
     ---
     // without spaces between $ and number
-    auto cmd = new PGCommand(conn, "INSERT INTO users (name, surname) VALUES ($ 1, $ 2)");
+    auto cmd = new PGCommand(conn, "INSERT INTO users (name, surname) VALUES ($1, $2)");
     cmd.parameters.add(1, PGType.TEXT).value = "John";
     cmd.parameters.add(2, PGType.TEXT).value = "Doe";
 
