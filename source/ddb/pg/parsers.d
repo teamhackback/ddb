@@ -45,13 +45,11 @@ PGFields parseRowDescription(scope ref Message msg)
     return () @trusted { return cast(PGFields)fields; }();
 }
 
-import ddb.pg.resultset : PGResultSet;
-
-PGResultSet!Specs parseDataRow(Specs...)(scope ref Message msg, PGResultSet!Specs result,
+auto parseDataRow(Result)(scope ref Message msg, Result result,
                                    scope ref PGFields fields, PGConnection conn)
 {
-    alias Row = DBRow!Specs;
-    result.row = conn.fetchRow!Specs(msg, fields);
+    alias Row = Result.Row;
+    result.row = conn.fetchRow!(Result._Specs)(msg, fields);
     static if (!Row.hasStaticLength)
         result.row.columnToIndex = &result.columnToIndex;
     result.validRow = true;

@@ -9,9 +9,13 @@ import ddb.pg.types : PGFields;
 
 @safe:
 
+import vibe.internal.freelistref : FreeListRef;
+alias PGResultSet(Specs...) = FreeListRef!(PGResultSetImpl!Specs);
+
 /// Input range of DBRow!Specs
-class PGResultSet(Specs...)
+class PGResultSetImpl(Specs...)
 {
+    alias _Specs = Specs;
     alias Row = DBRow!Specs;
     alias FetchRowDelegate = Row delegate(ref Message msg, ref PGFields fields) @safe;
 
@@ -25,7 +29,7 @@ class PGResultSet(Specs...)
     }
     private size_t[][string] columnMap;
 
-    package(ddb) this(PGConnection conn, ref PGFields fields, FetchRowDelegate dg)
+    this(PGConnection conn, ref PGFields fields, FetchRowDelegate dg)
     {
         this.conn = conn;
         this.fields = fields;
@@ -47,6 +51,9 @@ class PGResultSet(Specs...)
     {
         if (conn && conn.activeResultSet)
             close();
+
+        import vibe.core.log;
+        logDebug("ResultSet: close");
     }
 
     package(ddb.pg) size_t columnToIndex(string column, size_t index)

@@ -471,7 +471,7 @@ class PGConnection
         {
             checkActiveResultSet();
 
-            PGResultSet!Specs result = new PGResultSet!Specs(this, fields, &fetchRow!Specs);
+            auto result = PGResultSet!Specs(this, fields, &fetchRow!Specs);
 
             sendExecuteMessage(portalName, 0);
             sendSyncMessage();
@@ -779,7 +779,7 @@ class PGConnection
                 case RowDescription:
                     // response to Describe
                     fields = parseRowDescription(msg);
-                    result = new PGResultSet!Specs(this, fields, &fetchRow!Specs);
+                    result = PGResultSet!Specs(this, fields, &fetchRow!Specs);
                     goto receive;
                 case DataRow:
                     return parseDataRow(msg, result, fields, this);
@@ -906,7 +906,7 @@ class PGConnection
             try {
                 execute("COMMIT;");
             } catch (Exception e) {
-                throw new CommitTransactionException("Exception during the commit trasaction", e);
+                throw new CommitTransactionException("Exception during the commit trasaction: " ~ e.msg, e);
             }
         }
 
@@ -988,28 +988,24 @@ class PGConnection
         {
             static struct ScopedTransaction
             {
-                private PGConnection _conn;
+                PGConnection _conn;
 
-                ~this()
+                ~this() @trusted
                 {
                     try {
                         _conn.commit();
                     } catch (Exception e) {
+                        logDebug("msg: %s", e.msg);
                         _conn.rollback();
                         throw e;
                     }
                 }
+
+                alias _conn this;
             }
 
             begin(mode);
             return ScopedTransaction(this);
-        }
-
-        // new transaction will begin automatically after the call to rollback().
-        // TODO: expose as UDA
-        auto atomic(TransactionMode mode = DefaultTransactionMode)
-        {
-
         }
 
         void reloadArrayTypes()

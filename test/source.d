@@ -24,45 +24,43 @@ void runTest() @safe
     {
         auto cmd = new PGCommand(conn, `SELECT * from "LoanRequests" Limit 1`);
         auto result = cmd.executeQuery();
-        scope(exit) () @trusted { result.destroy; }();
         foreach (row; result)
             writeln(row);
     }
 
     // query
     with (conn.transaction) {
-        auto result2 = conn.query(`SELECT * from "LoanRequests" Limit 1`);
-        scope(exit) () @trusted { result2.destroy; }();
+        auto result2 = query(`SELECT * from "LoanRequests" Limit 1`);
         foreach (row; result2)
             writeln(row);
     }
 
-    conn.transaction({
-        auto result2 = conn.query(`SELECT * from "LoanRequests" Limit 1`);
-        scope(exit) () @trusted { result2.destroy; }();
-        foreach (row; result2)
-            writeln(row);
-    });
+    //conn.transaction({
+        //auto result2 = conn.query(`SELECT * from "LoanRequests" Limit 1`);
+        //scope(exit) () @trusted { result2.destroy; }();
+        //foreach (row; result2)
+            //writeln(row);
+    //});
 
-	auto subscriber = pdb.createSubscriber();
+	//auto subscriber = pdb.createSubscriber();
 
-    subscriber.subscribe("test1", "test2");
-    auto task = subscriber.listen((string channel, string message) {
-        writefln("channel: %s, msg: %s", channel, message);
-    });
+    //subscriber.subscribe("test1", "test2");
+    //auto task = subscriber.listen((string channel, string message) {
+        //writefln("channel: %s, msg: %s", channel, message);
+    //});
 
-    conn.publish("test1", "Hello World!");
-    conn.publish("test2", "Hello from Channel 2");
+    //conn.publish("test1", "Hello World!");
+    //conn.publish("test2", "Hello from Channel 2");
 
-    runTask({
-        subscriber.subscribe("test-fiber");
-        subscriber.publish("test-fiber", "Hello from the Fiber!");
-        subscriber.unsubscribe();
-    });
+    //runTask({
+        //subscriber.subscribe("test-fiber");
+        //subscriber.publish("test-fiber", "Hello from the Fiber!");
+        //subscriber.unsubscribe();
+    //});
 
-    import vibe.core.core : sleep;
-    import std.datetime : msecs;
-	sleep(100.msecs);
+    //import vibe.core.core : sleep;
+    //import std.datetime : msecs;
+	//sleep(100.msecs);
 }
 
 int main()
