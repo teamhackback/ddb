@@ -28,16 +28,17 @@ void runTest() @safe
             writeln(row);
     }
 
-    // query
+    // scoped struct with destructor
     with (conn.transaction) {
-        auto result2 = query(`SELECT * from "LoanRequests" Limit 1`);
-        foreach (row; result2)
+        auto result = query(`SELECT * from "LoanRequests" Limit 1`);
+        foreach (row; result)
             writeln(row);
     }
 
+    // scoped lambda
     conn.transaction({
-        auto result2 = conn.query(`SELECT * from "LoanRequests" Limit 1`);
-        foreach (row; result2)
+        auto result = conn.query(`SELECT * from "LoanRequests" Limit 1`);
+        foreach (row; result)
             writeln(row);
     });
 
@@ -66,14 +67,15 @@ int main()
 {
     import vibe.core.core, vibe.core.log;
     int ret = 0;
-    runTask({
-        try runTest();
-        catch (Throwable th) {
-            logError("Test failed: %s", th.msg);
-            logDiagnostic("Full error: %s", th);
-            ret = 1;
-        } finally exitEventLoop(true);
-    });
+    //runTask({
+        runTest();
+        //try runTest();
+        //catch (Throwable th) {
+            //logError("Test failed: %s", th.msg);
+            //logDiagnostic("Full error: %s", th);
+            //ret = 1;
+        //} finally exitEventLoop(true);
+    //});
     runEventLoop();
     return ret;
 }
