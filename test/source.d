@@ -67,15 +67,10 @@ int main()
 {
     import vibe.core.core, vibe.core.log;
     int ret = 0;
-    //runTask({
+    runTask({
         runTest();
-        //try runTest();
-        //catch (Throwable th) {
-            //logError("Test failed: %s", th.msg);
-            //logDiagnostic("Full error: %s", th);
-            //ret = 1;
-        //} finally exitEventLoop(true);
-    //});
+        exitEventLoop(true);
+    });
     runEventLoop();
     return ret;
 }
