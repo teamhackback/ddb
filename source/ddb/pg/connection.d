@@ -1091,6 +1091,22 @@ class PGConnection
             reloadEnumTypes();
         }
 
+        /*
+        PGCommand factory
+
+        Params:
+            query = query string
+
+        Examples:
+        ---
+        conn.command(`SELECT * from "LoanRequests" Limit 1`)
+        ---
+        */
+        PGCommand command(string query = "")
+        {
+                return new PGCommand(this, query);
+        }
+
 
         version(Have_vibe_core)
         {

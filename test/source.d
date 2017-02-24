@@ -28,6 +28,14 @@ void runTest() @safe
             writeln(row);
     }
 
+    // query
+    {
+        auto cmd = conn.command(`SELECT * from "LoanRequests" Limit 1`);
+        auto result = cmd.executeQuery();
+        foreach (row; result)
+            writeln(row);
+    }
+
     // scoped struct with destructor
     with (conn.transaction) {
         auto result = query(`SELECT * from "LoanRequests" Limit 1`);
