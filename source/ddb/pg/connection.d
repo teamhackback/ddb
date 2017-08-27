@@ -519,7 +519,7 @@ class PGConnection
             assert(0);
         }
 
-        void handleAsync(scope ref Message msg)
+        void handleAsync(ref Message msg)
         {
             with (PGResponseMessageTypes)
             switch (msg.type)
