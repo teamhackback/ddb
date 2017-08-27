@@ -899,6 +899,14 @@ class PGConnection
         }
 
         /**
+        Starts transaction of default type. Small benefit in bandwidth.
+        */
+        void begin_default()
+        {
+            execute("BEGIN;");
+        }
+
+        /**
         Commits a transaction.
         Throws: CommitTransactionException if the commit failed.
         */
