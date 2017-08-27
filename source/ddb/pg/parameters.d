@@ -139,7 +139,9 @@ class PGParameters
             {
                 if (param.value != null)
                 {
-                    enforce(param.value.convertsTo!T, new ParamException("Parameter's value is not convertible to " ~ T.stringof));
+                    enforce(param.value.convertsTo!T, new ParamException(
+                        "Parameter's value of type " ~ param.value.type.toString ~
+                        " is not convertible to " ~ T.stringof));
                     paramsLen += len;
                 }
             }
