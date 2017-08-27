@@ -25,7 +25,7 @@ class PGParameter
         return _value;
     }
     /// ditto
-    @property Variant value(T)(T v)
+    @property Variant value(T)(T v) @trusted
     {
         params.changed = true;
         return _value = Variant(v);
