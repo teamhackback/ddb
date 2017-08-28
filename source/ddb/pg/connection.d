@@ -8,6 +8,8 @@ import std.conv : text, to;
 import std.exception : enforce;
 import std.datetime : Clock, Date, DateTime, UTC;
 import std.string : indexOf, lastIndexOf;
+import std.range: isRandomAccessRange, ElementType;
+import std.traits: Unqual;
 
 import ddb.db : DBRow;
 import ddb.pg.exceptions;
@@ -136,7 +138,8 @@ class PGConnection
             stream.writeCString(password);
         }
 
-        void sendParseMessage(string statementName, string query, int[] oids)
+        void sendParseMessage(R)(string statementName, string query, scope R oids)
+            if (isRandomAccessRange!(Unqual!R) && is(Unqual!(ElementType!R) == PGType))
         {
             int len = cast(int)(4 + statementName.length + 1 + query.length + 1 + 2 + oids.length * 4);
 
