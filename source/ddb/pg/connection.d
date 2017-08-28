@@ -67,11 +67,7 @@ class PGConnection
         // (for the current connection)
         string reservePrepared()
         {
-            synchronized (this)
-            {
-
-                return to!string(lastPrepared++);
-            }
+            return to!string(lastPrepared++);
         }
 
         package(ddb.pg) Message getMessage()
