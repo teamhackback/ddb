@@ -137,12 +137,12 @@ class PGParameters
                 }
             }
 
+            paramsLen += 4; // all param values are preceded by 4-byte size header
+
             with (PGType)
             /*final*/ switch (param.type)
             {
-                case BOOLEAN:
-                    checkParam!bool(1);
-                    break;
+                case BOOLEAN: checkParam!bool(1); break;
                 case INT2: checkParam!short(2); break;
                 case INT4: checkParam!int(4); break;
                 case INT8: checkParam!long(8); break;
@@ -186,7 +186,7 @@ class PGParameters
         {
             if (param.value == null)
             {
-                write(-1);
+                write(-1);  // length to -1 as scpecial case, no value is written
                 continue;
             }
 
@@ -194,7 +194,7 @@ class PGParameters
             switch (param.type)
             {
                 case BOOLEAN:
-                    write(cast(bool) 1);
+                    write(cast(int)1);
                     write(param.value.get!bool);
                     break;
                 case INT2:

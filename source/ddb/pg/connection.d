@@ -172,25 +172,33 @@ class PGConnection
             bool hasText = false;
             int paramsLen = params.calcLen(hasText);
 
-            int len = cast(int)( 4 + portalName.length + 1 + statementName.length + 1 + (hasText ? (params.length*2) : 2) + 2 + 2 +
-                params.length * 4 + paramsLen + 2 + 2 );
+            int len = cast(int)(
+                4 + // length of the message
+                portalName.length + 1 + // length of destination portal name + null terminator
+                statementName.length + 1 + // length of prepared statement name + null terminator
+                // next we write parameter formats. If all data is binary,
+                // we simply put int16(1) + int16(1) bytes, if there is
+                // text mixed in, we write int16(0) + int16(format) for each parameter
+                2 + (hasText ? (params.length * 2) : 2) +
+                2 + // 2 bytes for int16(parameter length)
+                paramsLen + // length of all parameter tuples (length, body)
+                2 + 2   // int16 number result columns and int16 result-column format code (only one)
+                );
 
             stream.write(PGRequestMessageTypes.Bind);
             stream.write(len);
             stream.writeCString(portalName);
             stream.writeCString(statementName);
-            if(hasText)
+            if (hasText)
             {
-                stream.write(cast(short) params.length);
+                stream.write(cast(short)params.length);
                 foreach(param; params)
                 {
                     with (PGType)
                     switch (param.type)
                     {
-                        case BOOLEAN:
                         case TIMESTAMP:
                         case INET:
-                        case NUMERIC:
                         case JSONB:
                         case INTERVAL:
                         case VARCHAR:
@@ -200,8 +208,10 @@ class PGConnection
                         default:
                             stream.write(cast(short) 1); // binary format
                     }
+                }
             }
-            } else {
+            else
+            {
                 stream.write(cast(short)1); // one parameter format code
                 stream.write(cast(short)1); // binary format
             }
