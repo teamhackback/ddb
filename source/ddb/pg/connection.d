@@ -8,6 +8,8 @@ import std.conv : text, to;
 import std.exception : enforce;
 import std.datetime : Clock, Date, DateTime, UTC;
 import std.string : indexOf, lastIndexOf;
+import std.range: isRandomAccessRange, ElementType;
+import std.traits: Unqual;
 
 import ddb.db : DBRow;
 import ddb.pg.exceptions;
@@ -67,11 +69,7 @@ class PGConnection
         // (for the current connection)
         string reservePrepared()
         {
-            synchronized (this)
-            {
-
-                return to!string(lastPrepared++);
-            }
+            return to!string(lastPrepared++);
         }
 
         package(ddb.pg) Message getMessage()
@@ -140,7 +138,8 @@ class PGConnection
             stream.writeCString(password);
         }
 
-        void sendParseMessage(string statementName, string query, int[] oids)
+        void sendParseMessage(R)(string statementName, string query, scope R oids)
+            if (isRandomAccessRange!(Unqual!R) && is(Unqual!(ElementType!R) == PGType))
         {
             int len = cast(int)(4 + statementName.length + 1 + query.length + 1 + 2 + oids.length * 4);
 
@@ -173,25 +172,33 @@ class PGConnection
             bool hasText = false;
             int paramsLen = params.calcLen(hasText);
 
-            int len = cast(int)( 4 + portalName.length + 1 + statementName.length + 1 + (hasText ? (params.length*2) : 2) + 2 + 2 +
-                params.length * 4 + paramsLen + 2 + 2 );
+            int len = cast(int)(
+                4 + // length of the message
+                portalName.length + 1 + // length of destination portal name + null terminator
+                statementName.length + 1 + // length of prepared statement name + null terminator
+                // next we write parameter formats. If all data is binary,
+                // we simply put int16(1) + int16(1) bytes, if there is
+                // text mixed in, we write int16(0) + int16(format) for each parameter
+                2 + (hasText ? (params.length * 2) : 2) +
+                2 + // 2 bytes for int16(parameter length)
+                paramsLen + // length of all parameter tuples (length, body)
+                2 + 2   // int16 number result columns and int16 result-column format code (only one)
+                );
 
             stream.write(PGRequestMessageTypes.Bind);
             stream.write(len);
             stream.writeCString(portalName);
             stream.writeCString(statementName);
-            if(hasText)
+            if (hasText)
             {
-                stream.write(cast(short) params.length);
+                stream.write(cast(short)params.length);
                 foreach(param; params)
                 {
                     with (PGType)
                     switch (param.type)
                     {
-                        case BOOLEAN:
                         case TIMESTAMP:
                         case INET:
-                        case NUMERIC:
                         case JSONB:
                         case INTERVAL:
                         case VARCHAR:
@@ -201,8 +208,10 @@ class PGConnection
                         default:
                             stream.write(cast(short) 1); // binary format
                     }
+                }
             }
-            } else {
+            else
+            {
                 stream.write(cast(short)1); // one parameter format code
                 stream.write(cast(short)1); // binary format
             }
@@ -519,7 +528,7 @@ class PGConnection
             assert(0);
         }
 
-        void handleAsync(scope ref Message msg)
+        void handleAsync(ref Message msg)
         {
             with (PGResponseMessageTypes)
             switch (msg.type)
@@ -896,6 +905,14 @@ class PGConnection
         void begin(TransactionMode mode = DefaultTransactionMode)
         {
             execute("BEGIN TRANSACTION ISOLATION LEVEL " ~ mode.level ~ " " ~ mode.rwMode ~ ";");
+        }
+
+        /**
+        Starts transaction of default type. Small benefit in bandwidth.
+        */
+        void begin_default()
+        {
+            execute("BEGIN;");
         }
 
         /**

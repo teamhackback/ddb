@@ -10,6 +10,7 @@ import ddb.pg.connection : PGConnection;
 import ddb.pg.parameters : PGParameter, PGParameters;
 import ddb.pg.resultset : PGResultSet;
 import ddb.pg.types;
+import ddb.db: DBRow;
 
 @safe:
 
@@ -100,6 +101,17 @@ class PGCommand
         params.changed = true;
     }
 
+    void ensure_uprepared()
+    {
+        if (prepared)
+        {
+            conn.unprepare(preparedName);
+            preparedName = "";
+            prepared = false;
+            params.changed = true;
+        }
+    }
+
     /**
     Binds values to parameters and updates list of returned fields.
 
@@ -185,7 +197,7 @@ class PGCommand
     */
     DBRow!Specs executeRow(Specs...)(bool throwIfMoreRows = true)
     {
-        auto result = query!Specs();
+        auto result = conn.query!Specs();
         scope(exit) result.close();
         enforce(!result.empty(), "Result doesn't contain any rows.");
         auto row = result.front();
@@ -215,7 +227,7 @@ class PGCommand
     */
     T executeScalar(T = Variant)(bool throwIfMoreRows = true)
     {
-        auto result = query!T();
+        auto result = conn.query!T();
         scope(exit) result.close();
         enforce(!result.empty(), "Result doesn't contain any rows.");
         T row = result.front();
@@ -229,5 +241,3 @@ class PGCommand
 
     alias scalar = executeScalar;
 }
-
-

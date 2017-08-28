@@ -86,6 +86,11 @@ class PGStream
         }
     }
 
+    void write(bool x)
+    {
+        write(nativeToBigEndian(x)); // ubyte[]
+    }
+
     void write(ubyte x)
     {
         write(nativeToBigEndian(x)); // ubyte[]

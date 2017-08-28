@@ -14,7 +14,7 @@ Parses incoming responses from the Postgres Server
 
 @safe:
 
-PGFields parseRowDescription(scope ref Message msg)
+PGFields parseRowDescription(ref Message msg)
 {
     PGField[] fields;
     short fieldCount;
@@ -45,8 +45,8 @@ PGFields parseRowDescription(scope ref Message msg)
     return () @trusted { return cast(PGFields)fields; }();
 }
 
-auto parseDataRow(Result)(scope ref Message msg, Result result,
-                                   scope ref PGFields fields, PGConnection conn)
+auto parseDataRow(Result)(ref Message msg, Result result,
+                                   ref PGFields fields, PGConnection conn)
 {
     alias Row = Result.Row;
     result.row = conn.fetchRow!(Result._Specs)(msg, fields);
@@ -59,7 +59,7 @@ auto parseDataRow(Result)(scope ref Message msg, Result result,
     return result;
 }
 
-void parseReadyForQuery(scope ref Message msg, PGConnection conn)
+void parseReadyForQuery(ref Message msg, PGConnection conn)
 @trusted
 {
     enforce(msg.data.length == 1);
@@ -74,7 +74,7 @@ void parseReadyForQuery(scope ref Message msg, PGConnection conn)
     }
 }
 
-void parseCommandCompletion(scope ref Message msg, PGConnection conn, out uint oid, ref ulong rowsAffected)
+void parseCommandCompletion(ref Message msg, PGConnection conn, out uint oid, ref ulong rowsAffected)
 {
     import std.string : indexOf, lastIndexOf;
 

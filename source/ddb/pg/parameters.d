@@ -2,6 +2,8 @@
 module ddb.pg.parameters;
 
 import std.algorithm.sorting : sort;
+import std.algorithm.iteration: map;
+import std.conv : to;
 import std.variant : Variant;
 
 import ddb.pg.stream : PGStream;
@@ -25,7 +27,7 @@ class PGParameter
         return _value;
     }
     /// ditto
-    @property Variant value(T)(T v)
+    @property Variant value(T)(T v) @trusted
     {
         params.changed = true;
         return _value = Variant(v);
@@ -33,7 +35,7 @@ class PGParameter
 
     package(ddb) this(PGParameters params, short index, PGType type)
     {
-        enforce(index > 0, new ParamException("Parameter's index must be > 0"));
+        enforce!ParamException(index > 0, "Parameter's index must be > 0");
         this.params = params;
         this.index = index;
         this.type = type;
@@ -43,23 +45,13 @@ class PGParameter
 /// Collection of query parameters
 class PGParameters
 {
-    private PGParameter[short] params;
+    private PGParameter[] params;
     private PGCommand cmd;
     package(ddb) bool changed;
 
-    package(ddb) int[] getOids()
+    package(ddb) auto getOids()
     {
-        short[] keys = () @trusted { return params.keys; }();
-        sort(keys);
-
-        int[] oids = new int[params.length];
-
-        foreach (int i, key; keys)
-        {
-            oids[i] = params[key].type;
-        }
-
-        return oids;
+        return map!(a => a.type)(params);
     }
 
     ///
@@ -85,42 +77,41 @@ class PGParameters
     assert(cmd.executeNonQuery == 1);
     ---
     */
-    PGParameter add(short index, PGType type)
+    PGParameter add(int index, PGType type)
     {
         enforce(!cmd.prepared, "Can't add parameter to prepared statement.");
         changed = true;
-        return params[index] = new PGParameter(this, index, type);
+        enforce!ParamException(index == params.length + 1, "Add parameters sequentually, 1, then 2, then 3...");
+        params ~= new PGParameter(this, to!short(index), type);
+        return params[index - 1];
     }
 
-    PGParameters bind(T)(short index, PGType type, T value)
+    PGParameters bind(T)(int index, PGType type, T value)
     {
         enforce(!cmd.prepared, "Can't add parameter to prepared statement.");
         changed = true;
-        params[index] = new PGParameter(this, index, type);
-        params[index].value = value;
+        enforce!ParamException(index == params.length + 1, "Add parameters sequentually, 1, then 2, then 3...");
+        params ~= new PGParameter(this, to!short(index), type);
+        params[index - 1].value = value;
         return this;
     }
 
-
     // todo: remove()
 
-    PGParameter opIndex(short index)
+    PGParameter opIndex(int index)
     {
-        return params[index];
+        return params[index - 1];
     }
 
     int opApply(int delegate(ref PGParameter param) @safe dg)
     {
         int result = 0;
-
-        foreach (number; sort(() @trusted { return params.keys; }()))
+        foreach (p; params)
         {
-            result = dg(params[number]);
-
+            result = dg(p);
             if (result)
                 break;
         }
-
         return result;
     }
 
@@ -139,17 +130,19 @@ class PGParameters
             {
                 if (param.value != null)
                 {
-                    enforce(param.value.convertsTo!T, new ParamException("Parameter's value is not convertible to " ~ T.stringof));
+                    enforce(param.value.convertsTo!T, new ParamException(
+                        "Parameter's value of type " ~ param.value.type.toString ~
+                        " is not convertible to " ~ T.stringof));
                     paramsLen += len;
                 }
             }
 
+            paramsLen += 4; // all param values are preceded by 4-byte size header
+
             with (PGType)
             /*final*/ switch (param.type)
             {
-                case BOOLEAN:
-                    checkParam!bool(1);
-                    break;
+                case BOOLEAN: checkParam!bool(1); break;
                 case INT2: checkParam!short(2); break;
                 case INT4: checkParam!int(4); break;
                 case INT8: checkParam!long(8); break;
@@ -193,7 +186,7 @@ class PGParameters
         {
             if (param.value == null)
             {
-                write(-1);
+                write(-1);  // length to -1 as scpecial case, no value is written
                 continue;
             }
 
@@ -201,7 +194,7 @@ class PGParameters
             switch (param.type)
             {
                 case BOOLEAN:
-                    write(cast(bool) 1);
+                    write(cast(int)1);
                     write(param.value.get!bool);
                     break;
                 case INT2:
